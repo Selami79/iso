@@ -1,0 +1,549 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.parcel-cache
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Temporary folders
+tmp/
+temp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Prisma
+prisma/migrations/
+generated/
+
+# Uploads and user content
+uploads/
+public/uploads/
+storage/
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.cer
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Application specific
+logs/
+error.log
+access.log
+app.log
+
+# Test files
+coverage/
+.jest/
+test-results/
+
+# Redis dump
+dump.rdb
+
+# Email templates cache
+.email-cache/
+
+# Generated documentation
+docs/generated/
+
+# Storybook build outputs
+storybook-static/
+
+# Temporary files
+.tmp/
+.temp/
+
+# Local configuration overrides
+config/local.json
+config/local.js
+
+# Sentry
+.sentryclirc
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt/
+
+# Gatsby files
+.cache/
+public/
+
+# Vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Yarn PnP
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Local history
+.history/
+
+# IntelliJ based IDEs
+*.iml
+.idea/
+
+# Eclipse
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+.metadata
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Atom
+.ftpconfig
+.sftpconfig
+
+# System Files
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# Application logs
+*.log.*
+error*.log
+access*.log
+combined*.log
+app*.log
+
+# PM2 logs
+pm2.log
+pm2-error.log
+
+# Application cache
+.cache/
+cache/
+
+# Webpack
+.webpack/
+
+# Rollup
+.rollup/
+
+# ESBuild
+.esbuild/
+
+# Vite
+.vite/
+
+# SvelteKit
+.svelte-kit/
+
+# Remix
+.remix/
+
+# Blitz
+.blitz/
+
+# Astro
+.astro/
+
+# Solid
+.solid/
+
+# Qwik
+.qwik/
+
+# Capacitor
+.capacitor/
+
+# Ionic
+.ionic/
+
+# Cordova
+platforms/
+plugins/
+
+# React Native
+.expo/
+.expo-shared/
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+*.jks
+*.keystore
+local.properties
+
+# iOS
+*.mobileprovision
+*.p8
+*.p12
+
+# Generated files
+GENERATED_*
+generated_*
+*.generated.*
+
+# Hot reload
+.hot-reload/
+
+# Profiling
+.prof/
+*.prof
+
+# Benchmarks
+.bench/
+bench-results/
+
+# AI/ML models
+*.model
+models/
+checkpoints/
+
+# Data files (if not needed in repo)
+data/
+datasets/
+*.csv
+*.json
+*.xml
+!config.json
+!package.json
+!tsconfig.json
+
+# Secrets and sensitive files
+secrets/
+.secrets/
+*.secret
+*.private
+api-keys.txt
+.env.secret
+
+# Backup and temporary SQL files
+*.sql.backup
+*.sql.bak
+dump.sql
+backup.sql
+
+# Email templates compiled
+email-templates/compiled/
+
+# Static assets that are generated
+static/generated/
+public/generated/
+
+# Internationalization
+locale/compiled/
+i18n/compiled/
+
+# Documentation builds
+docs/build/
+documentation/build/
+
+# Style guide builds
+styleguide/build/
+
+# Component library builds
+components/build/
+
+# Design tokens
+design-tokens/build/
+
+# Favicon cache
+.favicon/
+
+# Service worker cache
+.sw-cache/
+
+# Analytics
+.analytics/
+
+# A/B testing
+.ab-testing/
+
+# Feature flags
+.feature-flags/
+
+# Monitoring
+.monitoring/
+
+# Load testing
+.load-testing/
+
+# Security scanning
+.security-scan/
+
+# Dependency scanning
+.dependency-scan/
+
+# License scanning
+.license-scan/
+
+# Code quality
+.code-quality/
+
+# Performance monitoring
+.performance/
+
+# User behavior analytics
+.user-analytics/
+
+# Error tracking
+.error-tracking/
+
+# Crash reporting
+.crash-reports/
+
+# Application metrics
+.metrics/
+
+# Health checks
+.health/
+
+# Audit logs (if stored locally)
+audit-logs/
+
+# Session storage (if file-based)
+sessions/
+
+# Rate limiting (if file-based)
+rate-limits/
+
+# File processing queue
+file-queue/
+
+# Image processing cache
+image-cache/
+
+# PDF generation cache
+pdf-cache/
+
+# Email queue
+email-queue/
+
+# Notification queue
+notification-queue/
+
+# Search index (if local)
+search-index/
+
+# Full-text search cache
+fulltext-cache/
+
+# OAuth tokens cache
+oauth-cache/
+
+# API response cache
+api-cache/
+
+# Database migration temp files
+migrations/temp/
+
+# Database seed temp files
+seeds/temp/
+
+# Testing databases
+test.db
+test.sqlite
+testing.db
+
+# Mock data
+mocks/generated/
+
+# Fixtures (if generated)
+fixtures/generated/
+
+# Screenshots from tests
+screenshots/
+test-screenshots/
+
+# Video recordings from tests
+videos/
+test-videos/
+
+# E2E test artifacts
+e2e-artifacts/
+
+# Visual regression test results
+visual-regression/
+
+# Performance test results
+performance-results/
+
+# API test results
+api-test-results/
+
+# Integration test results
+integration-test-results/
+
+# Unit test results
+unit-test-results/
+
+# Accessibility test results
+a11y-test-results/
+
+# Security test results
+security-test-results/
+
+# Code coverage artifacts
+coverage-artifacts/
+
+# Mutation testing results
+mutation-results/
+
+# Property-based testing results
+property-test-results/
+
+# Chaos engineering results
+chaos-results/
+
+# Contract testing results
+contract-test-results/
+
+# Smoke test results
+smoke-test-results/
