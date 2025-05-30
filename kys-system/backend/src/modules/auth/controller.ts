@@ -288,10 +288,11 @@ class AuthController {
         ...tokens
       });
     } catch (error) {
-      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      const err = error as Error;
+      if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
         logSecurityEvent('REFRESH_TOKEN_INVALID', 'medium', {
           ip: req.ip,
-          error: error.message
+          error: err.message
         });
         throw new UnauthorizedError('Geçersiz refresh token');
       }

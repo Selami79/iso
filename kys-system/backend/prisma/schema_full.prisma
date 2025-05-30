@@ -1,0 +1,1612 @@
+// KYS (Kalite Yönetim Sistemi) Prisma Schema
+// ISO 9001 Quality Management System Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// 1. USER MANAGEMENT AND AUTHORIZATION MODELS
+// ============================================================================
+
+model Department {
+  id                 Int          @id @default(autoincrement())
+  departmentName     String       @unique @map("department_name") @db.VarChar(150)
+  description        String?      @db.Text
+  managerUserId      Int?         @map("manager_user_id")
+  parentDepartmentId Int?         @map("parent_department_id")
+  isActive           Boolean      @default(true) @map("is_active")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  manager           User?               @relation("DepartmentManager", fields: [managerUserId], references: [id])
+  parentDepartment  Department?         @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  childDepartments  Department[]        @relation("DepartmentHierarchy")
+  users             User[]              @relation("UserDepartment")
+  capaRecords       CapaRecord[]
+  riskRegisters     RiskRegister[]
+  opportunities     Opportunity[]
+  equipments        Equipment[]
+  positionCompetencyRequirements PositionCompetencyRequirement[]
+
+  @@map("departments")
+}
+
+model User {
+  id                  Int      @id @default(autoincrement())
+  username            String   @unique @db.VarChar(100)
+  passwordHash        String   @map("password_hash") @db.VarChar(255)
+  email               String   @unique @db.VarChar(255)
+  fullName            String   @map("full_name") @db.VarChar(255)
+  departmentId        Int?     @map("department_id")
+  position            String?  @db.VarChar(150)
+  phone               String?  @db.VarChar(50)
+  employeeNumber      String?  @unique @map("employee_number") @db.VarChar(50)
+  hireDate            DateTime? @map("hire_date") @db.Date
+  isActive            Boolean  @default(true) @map("is_active")
+  isSystemAdmin       Boolean  @default(false) @map("is_system_admin")
+  emailVerified       Boolean  @default(false) @map("email_verified")
+  lastLoginAt         DateTime? @map("last_login_at")
+  passwordChangedAt   DateTime @default(now()) @map("password_changed_at")
+  avatarUrl           String?  @map("avatar_url") @db.VarChar(512)
+  timezone            String   @default("Europe/Istanbul") @db.VarChar(50)
+  language            String   @default("tr") @db.VarChar(10)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  department          Department?         @relation("UserDepartment", fields: [departmentId], references: [id])
+  managedDepartments  Department[]        @relation("DepartmentManager")
+  userRoles           UserRole[]
+  
+  // Documents
+  createdDocuments    Document[]          @relation("DocumentCreator")
+  preparedRevisions   DocumentRevision[]  @relation("RevisionPreparer")
+  approvedRevisions   DocumentRevision[]  @relation("RevisionApprover")
+  documentAccessLogs  DocumentAccessLog[]
+  
+  // CAPA
+  reportedCapas       CapaRecord[]        @relation("CapaReporter")
+  assignedCapas       CapaRecord[]        @relation("CapaAssignee")
+  verifiedCapas       CapaRecord[]        @relation("CapaVerifier")
+  assignedCapaActions CapaActionItem[]    @relation("CapaActionAssignee")
+  verifiedCapaActions CapaActionItem[]    @relation("CapaActionVerifier")
+  
+  // Audits
+  preparedAuditPrograms AuditProgram[]    @relation("AuditProgramPreparer")
+  approvedAuditPrograms AuditProgram[]    @relation("AuditProgramApprover")
+  ledAudits             AuditPlan[]       @relation("AuditLeader")
+  auditTeamMemberships  AuditTeamMember[]
+  auditFindings         AuditFinding[]    @relation("AuditFindingAuditor")
+  closedAuditFindings   AuditFinding[]    @relation("AuditFindingCloser")
+  
+  // Risk Management
+  identifiedRisks     RiskRegister[]      @relation("RiskIdentifier")
+  ownedRisks          RiskRegister[]      @relation("RiskOwner")
+  riskActionOwner     RiskRegister[]      @relation("RiskActionOwner")
+  identifiedOpportunities Opportunity[]   @relation("OpportunityIdentifier")
+  ownedOpportunities  Opportunity[]       @relation("OpportunityOwner")
+  
+  // Training
+  trainingInstructor  TrainingSession[]   @relation("TrainingInstructor")
+  trainingEnrollments TrainingEnrollment[]
+  competencyAssessments UserCompetencyAssessment[] @relation("AssessedUser")
+  conductedAssessments UserCompetencyAssessment[] @relation("Assessor")
+  
+  // Customer Relations
+  customerRepresentative Customer[]        @relation("CustomerRepresentative")
+  receivedComplaints  CustomerComplaint[]  @relation("ComplaintReceiver")
+  assignedComplaints  CustomerComplaint[]  @relation("ComplaintAssignee")
+  receivedFeedback    CustomerFeedback[]   @relation("FeedbackReceiver")
+  feedbackFollowUp    CustomerFeedback[]   @relation("FeedbackFollowUp")
+  createdSurveys      CustomerSatisfactionSurvey[] @relation("SurveyCreator")
+  
+  // Supplier Management
+  assignedSuppliers   Supplier[]          @relation("SupplierBuyer")
+  supplierEvaluations SupplierEvaluation[] @relation("SupplierEvaluator")
+  approvedEvaluations SupplierEvaluation[] @relation("SupplierEvaluationApprover")
+  detectedSupplierNonconformities SupplierNonconformity[] @relation("SupplierNonconformityDetector")
+  verifiedSupplierNonconformities SupplierNonconformity[] @relation("SupplierNonconformityVerifier")
+  
+  // Equipment Management
+  responsibleEquipments Equipment[]        @relation("EquipmentResponsible")
+  calibrationRecords  CalibrationRecord[] @relation("CalibrationPerformer")
+  approvedCalibrations CalibrationRecord[] @relation("CalibrationApprover")
+  maintenanceRecords  MaintenanceRecord[] @relation("MaintenancePerformer")
+  approvedMaintenances MaintenanceRecord[] @relation("MaintenanceApprover")
+  
+  // Management Review
+  chairedMeetings     ManagementReviewMeeting[] @relation("MeetingChairman")
+  secretaryMeetings   ManagementReviewMeeting[] @relation("MeetingSecretary")
+  reviewParticipations ManagementReviewParticipant[]
+  reviewInputs        ManagementReviewInput[] @relation("ReviewInputPresenter")
+  reviewActions       ManagementReviewAction[] @relation("ReviewActionAssignee")
+  
+  // Notifications and Tasks
+  sentNotifications   Notification[]      @relation("NotificationSender")
+  receivedNotifications Notification[]    @relation("NotificationRecipient")
+  assignedTasks       Task[]              @relation("TaskAssignee")
+  createdTasks        Task[]              @relation("TaskCreator")
+  delegatedFromTasks  Task[]              @relation("TaskDelegatedFrom")
+  approvedTasks       Task[]              @relation("TaskApprover")
+  taskComments        TaskComment[]
+  
+  // System
+  systemSettingsModifications SystemSetting[] @relation("SettingModifier")
+  auditLogs           AuditLog[]
+  errorLogs           ErrorLog[]          @relation("ErrorUser")
+  resolvedErrors      ErrorLog[]          @relation("ErrorResolver")
+  recordedKpiValues   KpiValue[]          @relation("KpiRecorder")
+  approvedKpiValues   KpiValue[]          @relation("KpiApprover")
+  responsibleKpis     KpiDefinition[]     @relation("KpiResponsible")
+
+  @@map("users")
+}
+
+model Role {
+  id           Int      @id @default(autoincrement())
+  roleName     String   @unique @map("role_name") @db.VarChar(100)
+  description  String?  @db.Text
+  isSystemRole Boolean  @default(false) @map("is_system_role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId       Int       @map("user_id")
+  roleId       Int       @map("role_id")
+  assignedByUserId Int?  @map("assigned_by_user_id")
+  assignedAt   DateTime  @default(now()) @map("assigned_at")
+  expiresAt    DateTime? @map("expires_at")
+  isActive     Boolean   @default(true) @map("is_active")
+
+  // Relations
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy   User?     @relation("UserRoleAssigner", fields: [assignedByUserId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Permission {
+  id             Int      @id @default(autoincrement())
+  permissionName String   @unique @map("permission_name") @db.VarChar(150)
+  description    String?  @db.Text
+  moduleName     String?  @map("module_name") @db.VarChar(100)
+  resource       String?  @db.VarChar(100)
+  action         String?  @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int      @map("role_id")
+  permissionId Int      @map("permission_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================================================
+// 2. DOCUMENT MANAGEMENT MODELS
+// ============================================================================
+
+model DocumentCategory {
+  id               Int      @id @default(autoincrement())
+  categoryName     String   @unique @map("category_name") @db.VarChar(150)
+  description      String?  @db.Text
+  parentCategoryId Int?     @map("parent_category_id")
+  sortOrder        Int      @default(0) @map("sort_order")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  parentCategory DocumentCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  childCategories DocumentCategory[] @relation("CategoryHierarchy")
+  documents       Document[]
+
+  @@map("document_categories")
+}
+
+enum DocumentStatus {
+  draft
+  pending_approval
+  approved
+  published
+  archived
+  obsolete
+
+  @@map("document_status")
+}
+
+enum AccessLevel {
+  public
+  internal
+  restricted
+  confidential
+
+  @@map("access_level")
+}
+
+enum DocumentType {
+  policy
+  procedure
+  work_instruction
+  form
+  record
+  external
+
+  @@map("document_type")
+}
+
+enum Priority {
+  low
+  medium
+  high
+  critical
+
+  @@map("priority")
+}
+
+model Document {
+  id                     Int             @id @default(autoincrement())
+  documentCode           String          @unique @map("document_code") @db.VarChar(50)
+  title                  String          @db.VarChar(255)
+  categoryId             Int             @map("category_id")
+  currentRevisionId      Int?            @map("current_revision_id")
+  status                 DocumentStatus  @default(draft)
+  createdByUserId        Int             @map("created_by_user_id")
+  publicationDate        DateTime?       @map("publication_date") @db.Date
+  nextReviewDate         DateTime?       @map("next_review_date") @db.Date
+  reviewFrequencyMonths  Int             @default(12) @map("review_frequency_months")
+  accessLevel            AccessLevel     @default(internal) @map("access_level")
+  keywords               String?         @db.Text
+  isControlled           Boolean         @default(true) @map("is_controlled")
+  language               String          @default("tr") @db.VarChar(10)
+  documentType           DocumentType    @default(procedure) @map("document_type")
+  priority               Priority        @default(medium)
+  retentionPeriodYears   Int             @default(7) @map("retention_period_years")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  category          DocumentCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy         User                @relation("DocumentCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  currentRevision   DocumentRevision?   @relation("DocumentCurrentRevision", fields: [currentRevisionId], references: [id])
+  revisions         DocumentRevision[]  @relation("DocumentRevisions")
+  accessLogs        DocumentAccessLog[]
+  relatedCapas      CapaRecord[]
+
+  @@map("documents")
+}
+
+enum ContentType {
+  text
+  file
+  url
+
+  @@map("content_type")
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  superseded
+
+  @@map("approval_status")
+}
+
+model DocumentRevision {
+  id                Int            @id @default(autoincrement())
+  documentId        Int            @map("document_id")
+  revisionNumber    String         @map("revision_number") @db.VarChar(20)
+  contentType       ContentType    @default(file) @map("content_type")
+  contentText       String?        @map("content_text") @db.Text
+  filePath          String?        @map("file_path") @db.VarChar(512)
+  fileName          String?        @map("file_name") @db.VarChar(255)
+  fileSize          BigInt?        @map("file_size")
+  fileMimeType      String?        @map("file_mime_type") @db.VarChar(100)
+  fileHash          String?        @map("file_hash") @db.VarChar(64)
+  changeDescription String         @map("change_description") @db.Text
+  preparedByUserId  Int            @map("prepared_by_user_id")
+  preparationDate   DateTime       @map("preparation_date") @db.Date
+  approvalStatus    ApprovalStatus @default(pending) @map("approval_status")
+  approvedByUserId  Int?           @map("approved_by_user_id")
+  approvalDate      DateTime?      @map("approval_date")
+  approvalComments  String?        @map("approval_comments") @db.Text
+  isActiveRevision  Boolean        @default(false) @map("is_active_revision")
+  pdfGenerated      Boolean        @default(false) @map("pdf_generated")
+  pdfPath           String?        @map("pdf_path") @db.VarChar(512)
+  downloadCount     Int            @default(0) @map("download_count")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  document           Document           @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Cascade)
+  currentForDocument Document?          @relation("DocumentCurrentRevision")
+  preparedBy         User               @relation("RevisionPreparer", fields: [preparedByUserId], references: [id], onDelete: Restrict)
+  approvedBy         User?              @relation("RevisionApprover", fields: [approvedByUserId], references: [id])
+  accessLogs         DocumentAccessLog[]
+
+  @@unique([documentId, revisionNumber])
+  @@map("document_revisions")
+}
+
+enum AccessAction {
+  view
+  download
+  print
+  share
+
+  @@map("access_action")
+}
+
+model DocumentAccessLog {
+  id         Int           @id @default(autoincrement())
+  documentId Int           @map("document_id")
+  revisionId Int?          @map("revision_id")
+  userId     Int           @map("user_id")
+  action     AccessAction
+  ipAddress  String?       @map("ip_address") @db.VarChar(45)
+  userAgent  String?       @map("user_agent") @db.Text
+  accessedAt DateTime      @default(now()) @map("accessed_at")
+
+  // Relations
+  document Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  revision DocumentRevision? @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("document_access_logs")
+}
+
+// ============================================================================
+// 3. CAPA (CORRECTIVE AND PREVENTIVE ACTIONS) MODELS
+// ============================================================================
+
+model NonconformitySource {
+  id          Int      @id @default(autoincrement())
+  sourceName  String   @unique @map("source_name") @db.VarChar(150)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  capaRecords CapaRecord[]
+
+  @@map("nonconformity_sources")
+}
+
+enum CapaType {
+  corrective
+  preventive
+  improvement
+
+  @@map("capa_type")
+}
+
+enum Severity {
+  low
+  medium
+  high
+  critical
+
+  @@map("severity")
+}
+
+enum CapaStatus {
+  open
+  investigation
+  root_cause_analysis
+  action_planning
+  implementation
+  verification
+  closed
+  cancelled
+
+  @@map("capa_status")
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+
+  @@map("risk_level")
+}
+
+model CapaRecord {
+  id                            Int                     @id @default(autoincrement())
+  capaCode                      String                  @unique @map("capa_code") @db.VarChar(50)
+  title                         String                  @db.VarChar(255)
+  nonconformityDescription      String                  @map("nonconformity_description") @db.Text
+  nonconformitySourceId         Int?                    @map("nonconformity_source_id")
+  detectionDate                 DateTime                @map("detection_date") @db.Date
+  reportedByUserId              Int                     @map("reported_by_user_id")
+  departmentId                  Int?                    @map("department_id")
+  capaType                      CapaType                @map("capa_type")
+  severity                      Severity                @default(medium)
+  status                        CapaStatus              @default(open)
+  immediateActionTaken          String?                 @map("immediate_action_taken") @db.Text
+  rootCauseAnalysis             String?                 @map("root_cause_analysis") @db.Text
+  rootCauseMethod               String?                 @map("root_cause_method") @db.VarChar(100)
+  plannedActions                String?                 @map("planned_actions") @db.Text
+  assignedToUserId              Int?                    @map("assigned_to_user_id")
+  dueDate                       DateTime?               @map("due_date") @db.Date
+  completionDate                DateTime?               @map("completion_date") @db.Date
+  actualCost                    Decimal?                @map("actual_cost") @db.Decimal(10, 2)
+  estimatedCost                 Decimal?                @map("estimated_cost") @db.Decimal(10, 2)
+  effectivenessVerificationNotes String?               @map("effectiveness_verification_notes") @db.Text
+  effectivenessVerificationDate DateTime?               @map("effectiveness_verification_date") @db.Date
+  verifiedByUserId              Int?                    @map("verified_by_user_id")
+  verificationMethod            String?                 @map("verification_method") @db.VarChar(100)
+  relatedDocumentId             Int?                    @map("related_document_id")
+  relatedAuditFindingId         Int?                    @map("related_audit_finding_id")
+  relatedCustomerComplaintId    Int?                    @map("related_customer_complaint_id")
+  recurrencePreventionMeasures  String?                 @map("recurrence_prevention_measures") @db.Text
+  lessonsLearned                String?                 @map("lessons_learned") @db.Text
+  priority                      Priority                @default(medium)
+  riskLevel                     RiskLevel               @default(medium) @map("risk_level")
+  createdAt                     DateTime                @default(now()) @map("created_at")
+  updatedAt                     DateTime                @updatedAt @map("updated_at")
+
+  // Relations
+  nonconformitySource   NonconformitySource? @relation(fields: [nonconformitySourceId], references: [id])
+  reportedBy            User                 @relation("CapaReporter", fields: [reportedByUserId], references: [id], onDelete: Restrict)
+  department            Department?          @relation(fields: [departmentId], references: [id])
+  assignedTo            User?                @relation("CapaAssignee", fields: [assignedToUserId], references: [id])
+  verifiedBy            User?                @relation("CapaVerifier", fields: [verifiedByUserId], references: [id])
+  relatedDocument       Document?            @relation(fields: [relatedDocumentId], references: [id])
+  relatedAuditFinding   AuditFinding?        @relation(fields: [relatedAuditFindingId], references: [id])
+  relatedCustomerComplaint CustomerComplaint? @relation(fields: [relatedCustomerComplaintId], references: [id])
+  
+  actionItems           CapaActionItem[]
+  supplierNonconformities SupplierNonconformity[]
+
+  @@map("capa_records")
+}
+
+enum ActionItemStatus {
+  pending
+  in_progress
+  completed
+  overdue
+  cancelled
+
+  @@map("action_item_status")
+}
+
+model CapaActionItem {
+  id                   Int              @id @default(autoincrement())
+  capaId               Int              @map("capa_id")
+  actionDescription    String           @map("action_description") @db.Text
+  assignedToUserId     Int              @map("assigned_to_user_id")
+  dueDate              DateTime         @map("due_date") @db.Date
+  status               ActionItemStatus @default(pending)
+  completionDate       DateTime?        @map("completion_date") @db.Date
+  completionNotes      String?          @map("completion_notes") @db.Text
+  verificationRequired Boolean          @default(false) @map("verification_required")
+  verifiedByUserId     Int?             @map("verified_by_user_id")
+  verificationDate     DateTime?        @map("verification_date") @db.Date
+  verificationNotes    String?          @map("verification_notes") @db.Text
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  capa       CapaRecord @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  assignedTo User       @relation("CapaActionAssignee", fields: [assignedToUserId], references: [id], onDelete: Restrict)
+  verifiedBy User?      @relation("CapaActionVerifier", fields: [verifiedByUserId], references: [id])
+
+  @@map("capa_action_items")
+}
+
+// ============================================================================
+// Basic implementation of remaining models for completeness
+// ============================================================================
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+  cancelled
+  overdue
+
+  @@map("task_status")
+}
+
+enum TaskType {
+  approval
+  review
+  action_item
+  assessment
+  follow_up
+  general
+
+  @@map("task_type")
+}
+
+model Task {
+  id                  Int        @id @default(autoincrement())
+  taskCode            String     @unique @map("task_code") @db.VarChar(50)
+  title               String     @db.VarChar(255)
+  description         String?    @db.Text
+  taskType            TaskType   @map("task_type")
+  assignedToUserId    Int        @map("assigned_to_user_id")
+  assignedByUserId    Int        @map("assigned_by_user_id")
+  delegatedFromUserId Int?       @map("delegated_from_user_id")
+  status              TaskStatus @default(pending)
+  priority            Priority   @default(medium)
+  dueDate             DateTime?  @map("due_date") @db.Date
+  startDate           DateTime?  @map("start_date") @db.Date
+  completionDate      DateTime?  @map("completion_date") @db.Date
+  estimatedHours      Decimal?   @map("estimated_hours") @db.Decimal(5, 2)
+  actualHours         Decimal?   @map("actual_hours") @db.Decimal(5, 2)
+  progressPercentage  Int        @default(0) @map("progress_percentage")
+  completionNotes     String?    @map("completion_notes") @db.Text
+  approvalRequired    Boolean    @default(false) @map("approval_required")
+  approvedByUserId    Int?       @map("approved_by_user_id")
+  approvalDate        DateTime?  @map("approval_date") @db.Date
+  approvalNotes       String?    @map("approval_notes") @db.Text
+  relatedEntityType   String?    @map("related_entity_type") @db.VarChar(100)
+  relatedEntityId     Int?       @map("related_entity_id")
+  parentTaskId        Int?       @map("parent_task_id")
+  recurrencePattern   String?    @map("recurrence_pattern") @db.VarChar(100)
+  nextRecurrenceDate  DateTime?  @map("next_recurrence_date") @db.Date
+  attachments         String?    @db.Text
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  assignedTo     User          @relation("TaskAssignee", fields: [assignedToUserId], references: [id], onDelete: Restrict)
+  assignedBy     User          @relation("TaskCreator", fields: [assignedByUserId], references: [id], onDelete: Restrict)
+  delegatedFrom  User?         @relation("TaskDelegatedFrom", fields: [delegatedFromUserId], references: [id])
+  approvedBy     User?         @relation("TaskApprover", fields: [approvedByUserId], references: [id])
+  parentTask     Task?         @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subTasks       Task[]        @relation("TaskHierarchy")
+  comments       TaskComment[]
+
+  @@map("tasks")
+}
+
+model TaskComment {
+  id           Int      @id @default(autoincrement())
+  taskId       Int      @map("task_id")
+  userId       Int      @map("user_id")
+  commentText  String   @map("comment_text") @db.Text
+  isInternal   Boolean  @default(true) @map("is_internal")
+  attachments  String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("task_comments")
+}
+
+// Audit Management Models (Basic Implementation)
+model AuditProgram {
+  id               Int      @id @default(autoincrement())
+  programName      String   @map("program_name") @db.VarChar(255)
+  year             Int
+  status           String   @db.VarChar(50)
+  scope            String?  @db.Text
+  objectives       String?  @db.Text
+  preparedByUserId Int      @map("prepared_by_user_id")
+  approvedByUserId Int?     @map("approved_by_user_id")
+  approvalDate     DateTime? @map("approval_date") @db.Date
+  startDate        DateTime? @map("start_date") @db.Date
+  endDate          DateTime? @map("end_date") @db.Date
+  budget           Decimal? @db.Decimal(10, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  preparedBy User  @relation("AuditProgramPreparer", fields: [preparedByUserId], references: [id], onDelete: Restrict)
+  approvedBy User? @relation("AuditProgramApprover", fields: [approvedByUserId], references: [id])
+  auditPlans AuditPlan[]
+
+  @@map("audit_programs")
+}
+
+model AuditPlan {
+  id                   Int      @id @default(autoincrement())
+  auditProgramId       Int?     @map("audit_program_id")
+  auditCode            String   @unique @map("audit_code") @db.VarChar(50)
+  auditTitle           String   @map("audit_title") @db.VarChar(255)
+  auditType            String   @map("audit_type") @db.VarChar(50)
+  scope                String   @db.Text
+  criteria             String   @db.Text
+  departmentId         Int?     @map("department_id")
+  supplierId           Int?     @map("supplier_id")
+  plannedStartDate     DateTime @map("planned_start_date") @db.Date
+  plannedEndDate       DateTime @map("planned_end_date") @db.Date
+  actualStartDate      DateTime? @map("actual_start_date") @db.Date
+  actualEndDate        DateTime? @map("actual_end_date") @db.Date
+  leadAuditorUserId    Int      @map("lead_auditor_user_id")
+  status               String   @default("planned") @db.VarChar(50)
+  riskLevel            RiskLevel @default(medium) @map("risk_level")
+  auditFrequencyMonths Int      @default(12) @map("audit_frequency_months")
+  lastAuditDate        DateTime? @map("last_audit_date") @db.Date
+  nextAuditDate        DateTime? @map("next_audit_date") @db.Date
+  estimatedHours       Decimal? @map("estimated_hours") @db.Decimal(5, 2)
+  actualHours          Decimal? @map("actual_hours") @db.Decimal(5, 2)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  auditProgram     AuditProgram?     @relation(fields: [auditProgramId], references: [id])
+  leadAuditor      User              @relation("AuditLeader", fields: [leadAuditorUserId], references: [id], onDelete: Restrict)
+  teamMembers      AuditTeamMember[]
+  findings         AuditFinding[]
+
+  @@map("audit_plans")
+}
+
+model AuditTeamMember {
+  id           Int      @id @default(autoincrement())
+  auditPlanId  Int      @map("audit_plan_id")
+  userId       Int      @map("user_id")
+  role         String   @db.VarChar(50)
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+
+  // Relations
+  auditPlan AuditPlan @relation(fields: [auditPlanId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([auditPlanId, userId])
+  @@map("audit_team_members")
+}
+
+model AuditFinding {
+  id                 Int      @id @default(autoincrement())
+  auditPlanId        Int      @map("audit_plan_id")
+  findingCode        String   @map("finding_code") @db.VarChar(50)
+  findingTitle       String   @map("finding_title") @db.VarChar(255)
+  findingDescription String   @map("finding_description") @db.Text
+  findingType        String   @map("finding_type") @db.VarChar(50)
+  severity           Severity @default(low)
+  clauseReference    String?  @map("clause_reference") @db.VarChar(100)
+  evidence           String?  @db.Text
+  auditeeResponse    String?  @map("auditee_response") @db.Text
+  auditorUserId      Int      @map("auditor_user_id")
+  identifiedDate     DateTime @map("identified_date") @db.Date
+  capaRequired       Boolean  @default(false) @map("capa_required")
+  capaId             Int?     @map("capa_id")
+  status             String   @default("open") @db.VarChar(50)
+  closedDate         DateTime? @map("closed_date") @db.Date
+  closedByUserId     Int?     @map("closed_by_user_id")
+  verificationNotes  String?  @map("verification_notes") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  auditPlan AuditPlan   @relation(fields: [auditPlanId], references: [id], onDelete: Cascade)
+  auditor   User        @relation("AuditFindingAuditor", fields: [auditorUserId], references: [id], onDelete: Restrict)
+  closedBy  User?       @relation("AuditFindingCloser", fields: [closedByUserId], references: [id])
+  capa      CapaRecord? @relation(fields: [capaId], references: [id])
+
+  @@map("audit_findings")
+}
+
+// Placeholder models for remaining modules (to be fully implemented)
+model RiskCategory {
+  id           Int      @id @default(autoincrement())
+  categoryName String   @unique @map("category_name") @db.VarChar(150)
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  riskRegisters RiskRegister[]
+
+  @@map("risk_categories")
+}
+
+model RiskRegister {
+  id                    Int         @id @default(autoincrement())
+  riskCode              String      @unique @map("risk_code") @db.VarChar(50)
+  riskTitle             String      @map("risk_title") @db.VarChar(255)
+  riskDescription       String      @map("risk_description") @db.Text
+  riskCategoryId        Int?        @map("risk_category_id")
+  departmentId          Int?        @map("department_id")
+  identifiedByUserId    Int         @map("identified_by_user_id")
+  identifiedDate        DateTime    @map("identified_date") @db.Date
+  riskOwnerUserId       Int         @map("risk_owner_user_id")
+  riskSource            String?     @map("risk_source") @db.VarChar(255)
+  potentialCauses       String?     @map("potential_causes") @db.Text
+  potentialConsequences String?     @map("potential_consequences") @db.Text
+  existingControls      String?     @map("existing_controls") @db.Text
+  probabilityBefore     Int?        @map("probability_before")
+  impactBefore          Int?        @map("impact_before")
+  riskLevelBefore       RiskLevel?  @map("risk_level_before")
+  treatmentStrategy     String?     @default("mitigate") @map("treatment_strategy") @db.VarChar(50)
+  plannedActions        String?     @map("planned_actions") @db.Text
+  actionOwnerUserId     Int?        @map("action_owner_user_id")
+  targetDate            DateTime?   @map("target_date") @db.Date
+  probabilityAfter      Int?        @map("probability_after")
+  impactAfter           Int?        @map("impact_after")
+  riskLevelAfter        RiskLevel?  @map("risk_level_after")
+  status                String      @default("identified") @db.VarChar(50)
+  reviewFrequencyMonths Int         @default(6) @map("review_frequency_months")
+  nextReviewDate        DateTime?   @map("next_review_date") @db.Date
+  lastReviewDate        DateTime?   @map("last_review_date") @db.Date
+  reviewNotes           String?     @map("review_notes") @db.Text
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  riskCategory  RiskCategory? @relation(fields: [riskCategoryId], references: [id])
+  department    Department?   @relation(fields: [departmentId], references: [id])
+  identifiedBy  User          @relation("RiskIdentifier", fields: [identifiedByUserId], references: [id], onDelete: Restrict)
+  riskOwner     User          @relation("RiskOwner", fields: [riskOwnerUserId], references: [id], onDelete: Restrict)
+  actionOwner   User?         @relation("RiskActionOwner", fields: [actionOwnerUserId], references: [id])
+
+  @@map("risk_registers")
+}
+
+model Opportunity {
+  id                     Int        @id @default(autoincrement())
+  opportunityCode        String     @unique @map("opportunity_code") @db.VarChar(50)
+  opportunityTitle       String     @map("opportunity_title") @db.VarChar(255)
+  opportunityDescription String     @map("opportunity_description") @db.Text
+  departmentId           Int?       @map("department_id")
+  identifiedByUserId     Int        @map("identified_by_user_id")
+  identifiedDate         DateTime   @map("identified_date") @db.Date
+  opportunityOwnerUserId Int        @map("opportunity_owner_user_id")
+  potentialBenefits      String?    @map("potential_benefits") @db.Text
+  requiredResources      String?    @map("required_resources") @db.Text
+  feasibilityAssessment  String?    @map("feasibility_assessment") @db.Text
+  impactAssessment       Int?       @map("impact_assessment")
+  effortRequired         Int?       @map("effort_required")
+  status                 String     @default("identified") @db.VarChar(50)
+  plannedActions         String?    @map("planned_actions") @db.Text
+  targetDate             DateTime?  @map("target_date") @db.Date
+  actualCompletionDate   DateTime?  @map("actual_completion_date") @db.Date
+  benefitsRealized       String?    @map("benefits_realized") @db.Text
+  lessonsLearned         String?    @map("lessons_learned") @db.Text
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  department      Department? @relation(fields: [departmentId], references: [id])
+  identifiedBy    User        @relation("OpportunityIdentifier", fields: [identifiedByUserId], references: [id], onDelete: Restrict)
+  opportunityOwner User       @relation("OpportunityOwner", fields: [opportunityOwnerUserId], references: [id], onDelete: Restrict)
+
+  @@map("opportunities")
+}
+
+// Training Management Models (Basic Implementation)
+model CompetencyCategory {
+  id           Int      @id @default(autoincrement())
+  categoryName String   @unique @map("category_name") @db.VarChar(150)
+  description  String?  @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  competencies Competency[]
+
+  @@map("competency_categories")
+}
+
+model Competency {
+  id                       Int         @id @default(autoincrement())
+  competencyName           String      @map("competency_name") @db.VarChar(255)
+  description              String?     @db.Text
+  categoryId               Int?        @map("category_id")
+  competencyType           String      @default("technical") @map("competency_type") @db.VarChar(50)
+  proficiencyLevels        Json?       @map("proficiency_levels")
+  assessmentMethod         String      @default("exam") @map("assessment_method") @db.VarChar(50)
+  validityPeriodMonths     Int         @default(12) @map("validity_period_months")
+  isMandatory              Boolean     @default(false) @map("is_mandatory")
+  createdAt                DateTime    @default(now()) @map("created_at")
+  updatedAt                DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  category                 CompetencyCategory? @relation(fields: [categoryId], references: [id])
+  positionRequirements     PositionCompetencyRequirement[]
+  courseMapping            CourseCompetencyMapping[]
+  userAssessments          UserCompetencyAssessment[]
+
+  @@map("competencies")
+}
+
+model PositionCompetencyRequirement {
+  id             Int        @id @default(autoincrement())
+  positionName   String     @map("position_name") @db.VarChar(255)
+  competencyId   Int        @map("competency_id")
+  requiredLevel  String     @map("required_level") @db.VarChar(50)
+  isMandatory    Boolean    @default(true) @map("is_mandatory")
+  departmentId   Int?       @map("department_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  competency Competency  @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  @@unique([positionName, competencyId])
+  @@map("position_competency_requirements")
+}
+
+model TrainingCourse {
+  id                        Int      @id @default(autoincrement())
+  courseCode                String   @unique @map("course_code") @db.VarChar(50)
+  courseName                String   @map("course_name") @db.VarChar(255)
+  description               String?  @db.Text
+  courseType                String   @default("internal") @map("course_type") @db.VarChar(50)
+  durationHours             Decimal? @map("duration_hours") @db.Decimal(5, 2)
+  maxParticipants           Int?     @map("max_participants")
+  courseMaterials           String?  @map("course_materials") @db.Text
+  prerequisites             String?  @db.Text
+  learningObjectives        String?  @map("learning_objectives") @db.Text
+  assessmentMethod          String   @default("exam") @map("assessment_method") @db.VarChar(50)
+  passingScore              Decimal? @map("passing_score") @db.Decimal(5, 2)
+  certificateValidityMonths Int      @default(12) @map("certificate_validity_months")
+  instructorRequirements    String?  @map("instructor_requirements") @db.Text
+  costPerParticipant        Decimal? @map("cost_per_participant") @db.Decimal(10, 2)
+  isActive                  Boolean  @default(true) @map("is_active")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  competencyMapping CourseCompetencyMapping[]
+  sessions          TrainingSession[]
+
+  @@map("training_courses")
+}
+
+model CourseCompetencyMapping {
+  courseId               Int    @map("course_id")
+  competencyId           Int    @map("competency_id")
+  competencyLevelAchieved String @map("competency_level_achieved") @db.VarChar(50)
+
+  // Relations
+  course     TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  competency Competency     @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, competencyId])
+  @@map("course_competency_mapping")
+}
+
+model TrainingSession {
+  id                     Int      @id @default(autoincrement())
+  courseId               Int      @map("course_id")
+  sessionCode            String   @unique @map("session_code") @db.VarChar(50)
+  sessionDate            DateTime @map("session_date") @db.Date
+  startTime              DateTime @map("start_time") @db.Time
+  endTime                DateTime @map("end_time") @db.Time
+  location               String?  @db.VarChar(255)
+  instructorUserId       Int?     @map("instructor_user_id")
+  externalInstructorName String?  @map("external_instructor_name") @db.VarChar(255)
+  maxParticipants        Int?     @map("max_participants")
+  status                 String   @default("planned") @db.VarChar(50)
+  actualStartTime        DateTime? @map("actual_start_time")
+  actualEndTime          DateTime? @map("actual_end_time")
+  sessionNotes           String?  @map("session_notes") @db.Text
+  materialsProvided      String?  @map("materials_provided") @db.Text
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  course     TrainingCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor User?                @relation("TrainingInstructor", fields: [instructorUserId], references: [id])
+  enrollments TrainingEnrollment[]
+
+  @@map("training_sessions")
+}
+
+model TrainingEnrollment {
+  id                   Int       @id @default(autoincrement())
+  sessionId            Int       @map("session_id")
+  userId               Int       @map("user_id")
+  enrollmentDate       DateTime  @map("enrollment_date") @db.Date
+  enrollmentStatus     String    @default("enrolled") @map("enrollment_status") @db.VarChar(50)
+  attendanceStatus     String    @default("present") @map("attendance_status") @db.VarChar(50)
+  completionDate       DateTime? @map("completion_date") @db.Date
+  score                Decimal?  @db.Decimal(5, 2)
+  passed               Boolean?
+  certificateIssued    Boolean   @default(false) @map("certificate_issued")
+  certificateNumber    String?   @map("certificate_number") @db.VarChar(100)
+  certificateExpiryDate DateTime? @map("certificate_expiry_date") @db.Date
+  feedbackRating       Int?      @map("feedback_rating")
+  feedbackComments     String?   @map("feedback_comments") @db.Text
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("training_enrollments")
+}
+
+model UserCompetencyAssessment {
+  id                   Int       @id @default(autoincrement())
+  userId               Int       @map("user_id")
+  competencyId         Int       @map("competency_id")
+  assessmentDate       DateTime  @map("assessment_date") @db.Date
+  assessorUserId       Int       @map("assessor_user_id")
+  assessmentMethod     String    @map("assessment_method") @db.VarChar(50)
+  achievedLevel        String    @map("achieved_level") @db.VarChar(50)
+  score                Decimal?  @db.Decimal(5, 2)
+  passed               Boolean
+  certificateNumber    String?   @map("certificate_number") @db.VarChar(100)
+  validUntil           DateTime? @map("valid_until") @db.Date
+  assessmentNotes      String?   @map("assessment_notes") @db.Text
+  evidenceDocuments    String?   @map("evidence_documents") @db.Text
+  nextAssessmentDate   DateTime? @map("next_assessment_date") @db.Date
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user       User       @relation("AssessedUser", fields: [userId], references: [id], onDelete: Cascade)
+  competency Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  assessor   User       @relation("Assessor", fields: [assessorUserId], references: [id], onDelete: Restrict)
+
+  @@map("user_competency_assessments")
+}
+
+// Customer and Supplier Models (Basic Implementation)
+model Customer {
+  id                            Int      @id @default(autoincrement())
+  customerCode                  String   @unique @map("customer_code") @db.VarChar(50)
+  companyName                   String   @map("company_name") @db.VarChar(255)
+  contactPerson                 String?  @map("contact_person") @db.VarChar(255)
+  email                         String?  @db.VarChar(255)
+  phone                         String?  @db.VarChar(50)
+  address                       String?  @db.Text
+  city                          String?  @db.VarChar(100)
+  country                       String?  @db.VarChar(100)
+  customerType                  String   @default("corporate") @map("customer_type") @db.VarChar(50)
+  industry                      String?  @db.VarChar(100)
+  registrationDate              DateTime? @map("registration_date") @db.Date
+  status                        String   @default("active") @db.VarChar(50)
+  creditLimit                   Decimal? @map("credit_limit") @db.Decimal(12, 2)
+  paymentTerms                  String?  @map("payment_terms") @db.VarChar(100)
+  qualityRequirements           String?  @map("quality_requirements") @db.Text
+  specialInstructions           String?  @map("special_instructions") @db.Text
+  assignedRepresentativeUserId  Int?     @map("assigned_representative_user_id")
+  createdAt                     DateTime @default(now()) @map("created_at")
+  updatedAt                     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  assignedRepresentative User? @relation("CustomerRepresentative", fields: [assignedRepresentativeUserId], references: [id])
+  complaints            CustomerComplaint[]
+  feedback              CustomerFeedback[]
+
+  @@map("customers")
+}
+
+model CustomerComplaint {
+  id                          Int       @id @default(autoincrement())
+  complaintCode               String    @unique @map("complaint_code") @db.VarChar(50)
+  customerId                  Int       @map("customer_id")
+  complaintTitle              String    @map("complaint_title") @db.VarChar(255)
+  complaintDescription        String    @map("complaint_description") @db.Text
+  complaintType               String    @map("complaint_type") @db.VarChar(50)
+  severity                    Severity  @default(medium)
+  complaintSource             String    @map("complaint_source") @db.VarChar(50)
+  receivedDate                DateTime  @map("received_date") @db.Date
+  receivedByUserId            Int       @map("received_by_user_id")
+  assignedToUserId            Int?      @map("assigned_to_user_id")
+  status                      String    @default("received") @db.VarChar(50)
+  priority                    Priority  @default(medium)
+  productServiceInvolved      String?   @map("product_service_involved") @db.VarChar(255)
+  orderNumber                 String?   @map("order_number") @db.VarChar(100)
+  deliveryDate                DateTime? @map("delivery_date") @db.Date
+  financialImpact             Decimal?  @map("financial_impact") @db.Decimal(10, 2)
+  immediateActionTaken        String?   @map("immediate_action_taken") @db.Text
+  investigationFindings       String?   @map("investigation_findings") @db.Text
+  rootCauseAnalysis           String?   @map("root_cause_analysis") @db.Text
+  correctiveActionsTaken      String?   @map("corrective_actions_taken") @db.Text
+  customerNotificationSent    Boolean   @default(false) @map("customer_notification_sent")
+  customerSatisfactionRating Int?      @map("customer_satisfaction_rating")
+  resolutionDate              DateTime? @map("resolution_date") @db.Date
+  closureDate                 DateTime? @map("closure_date") @db.Date
+  relatedCapaId               Int?      @map("related_capa_id")
+  lessonsLearned              String?   @map("lessons_learned") @db.Text
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  receivedBy  User        @relation("ComplaintReceiver", fields: [receivedByUserId], references: [id], onDelete: Restrict)
+  assignedTo  User?       @relation("ComplaintAssignee", fields: [assignedToUserId], references: [id])
+  relatedCapa CapaRecord? @relation(fields: [relatedCapaId], references: [id])
+
+  @@map("customer_complaints")
+}
+
+model CustomerFeedback {
+  id                        Int       @id @default(autoincrement())
+  customerId                Int       @map("customer_id")
+  feedbackType              String    @map("feedback_type") @db.VarChar(50)
+  feedbackTitle             String?   @map("feedback_title") @db.VarChar(255)
+  feedbackDescription       String    @map("feedback_description") @db.Text
+  feedbackCategory          String?   @map("feedback_category") @db.VarChar(100)
+  receivedDate              DateTime  @map("received_date") @db.Date
+  receivedByUserId          Int       @map("received_by_user_id")
+  rating                    Int?
+  followUpRequired          Boolean   @default(false) @map("follow_up_required")
+  followUpAssignedToUserId  Int?      @map("follow_up_assigned_to_user_id")
+  followUpCompleted         Boolean   @default(false) @map("follow_up_completed")
+  followUpNotes             String?   @map("follow_up_notes") @db.Text
+  createdAt                 DateTime  @default(now()) @map("created_at")
+  updatedAt                 DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  customer              Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  receivedBy            User     @relation("FeedbackReceiver", fields: [receivedByUserId], references: [id], onDelete: Restrict)
+  followUpAssignedTo    User?    @relation("FeedbackFollowUp", fields: [followUpAssignedToUserId], references: [id])
+
+  @@map("customer_feedback")
+}
+
+model CustomerSatisfactionSurvey {
+  id                      Int      @id @default(autoincrement())
+  surveyName              String   @map("survey_name") @db.VarChar(255)
+  surveyDescription       String?  @map("survey_description") @db.Text
+  surveyPeriodStart       DateTime @map("survey_period_start") @db.Date
+  surveyPeriodEnd         DateTime @map("survey_period_end") @db.Date
+  targetCustomerSegment   String?  @map("target_customer_segment") @db.VarChar(100)
+  surveyMethod            String   @map("survey_method") @db.VarChar(50)
+  totalSent               Int      @default(0) @map("total_sent")
+  totalResponses          Int      @default(0) @map("total_responses")
+  averageSatisfactionScore Decimal? @map("average_satisfaction_score") @db.Decimal(3, 2)
+  status                  String   @default("planned") @db.VarChar(50)
+  createdByUserId         Int      @map("created_by_user_id")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdBy User @relation("SurveyCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@map("customer_satisfaction_surveys")
+}
+
+model Supplier {
+  id                       Int       @id @default(autoincrement())
+  supplierCode             String    @unique @map("supplier_code") @db.VarChar(50)
+  companyName              String    @map("company_name") @db.VarChar(255)
+  contactPerson            String?   @map("contact_person") @db.VarChar(255)
+  email                    String?   @db.VarChar(255)
+  phone                    String?   @db.VarChar(50)
+  address                  String?   @db.Text
+  city                     String?   @db.VarChar(100)
+  country                  String?   @db.VarChar(100)
+  supplierType             String    @map("supplier_type") @db.VarChar(50)
+  industry                 String?   @db.VarChar(100)
+  registrationDate         DateTime? @map("registration_date") @db.Date
+  status                   String    @default("potential") @db.VarChar(50)
+  certificationIso9001     Boolean   @default(false) @map("certification_iso9001")
+  certificationIso14001    Boolean   @default(false) @map("certification_iso14001")
+  certificationIso45001    Boolean   @default(false) @map("certification_iso45001")
+  otherCertifications      String?   @map("other_certifications") @db.Text
+  paymentTerms             String?   @map("payment_terms") @db.VarChar(100)
+  deliveryTerms            String?   @map("delivery_terms") @db.VarChar(100)
+  qualityAgreementSigned   Boolean   @default(false) @map("quality_agreement_signed")
+  qualityAgreementDate     DateTime? @map("quality_agreement_date") @db.Date
+  assignedBuyerUserId      Int?      @map("assigned_buyer_user_id")
+  riskLevel                RiskLevel @default(medium) @map("risk_level")
+  businessVolumeAnnual     Decimal?  @map("business_volume_annual") @db.Decimal(12, 2)
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  assignedBuyer     User?                     @relation("SupplierBuyer", fields: [assignedBuyerUserId], references: [id])
+  evaluations       SupplierEvaluation[]
+  nonconformities   SupplierNonconformity[]
+  equipments        Equipment[]
+
+  @@map("suppliers")
+}
+
+model SupplierEvaluation {
+  id                          Int       @id @default(autoincrement())
+  supplierId                  Int       @map("supplier_id")
+  evaluationPeriodStart       DateTime  @map("evaluation_period_start") @db.Date
+  evaluationPeriodEnd         DateTime  @map("evaluation_period_end") @db.Date
+  evaluatorUserId             Int       @map("evaluator_user_id")
+  evaluationType              String    @map("evaluation_type") @db.VarChar(50)
+  qualityScore                Int?      @map("quality_score")
+  deliveryScore               Int?      @map("delivery_score")
+  priceCompetitivenessScore   Int?      @map("price_competitiveness_score")
+  serviceScore                Int?      @map("service_score")
+  technicalCapabilityScore    Int?      @map("technical_capability_score")
+  evaluationGrade             String?   @map("evaluation_grade") @db.VarChar(2)
+  strengths                   String?   @db.Text
+  weaknesses                  String?   @db.Text
+  improvementRecommendations  String?   @map("improvement_recommendations") @db.Text
+  evaluationNotes             String?   @map("evaluation_notes") @db.Text
+  nextEvaluationDate          DateTime? @map("next_evaluation_date") @db.Date
+  evaluationStatus            String    @default("draft") @map("evaluation_status") @db.VarChar(50)
+  approvedByUserId            Int?      @map("approved_by_user_id")
+  approvalDate                DateTime? @map("approval_date") @db.Date
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  evaluator  User     @relation("SupplierEvaluator", fields: [evaluatorUserId], references: [id], onDelete: Restrict)
+  approvedBy User?    @relation("SupplierEvaluationApprover", fields: [approvedByUserId], references: [id])
+
+  @@map("supplier_evaluations")
+}
+
+model SupplierNonconformity {
+  id                               Int       @id @default(autoincrement())
+  supplierId                       Int       @map("supplier_id")
+  nonconformityCode                String    @unique @map("nonconformity_code") @db.VarChar(50)
+  description                      String    @db.Text
+  nonconformityType                String    @map("nonconformity_type") @db.VarChar(50)
+  severity                         Severity  @default(low)
+  detectedDate                     DateTime  @map("detected_date") @db.Date
+  detectedByUserId                 Int       @map("detected_by_user_id")
+  productServiceAffected           String?   @map("product_service_affected") @db.VarChar(255)
+  quantityAffected                 String?   @map("quantity_affected") @db.VarChar(100)
+  financialImpact                  Decimal?  @map("financial_impact") @db.Decimal(10, 2)
+  supplierNotifiedDate             DateTime? @map("supplier_notified_date") @db.Date
+  supplierResponseDueDate          DateTime? @map("supplier_response_due_date") @db.Date
+  supplierResponseReceivedDate     DateTime? @map("supplier_response_received_date") @db.Date
+  supplierResponse                 String?   @map("supplier_response") @db.Text
+  correctiveActionRequired         Boolean   @default(true) @map("corrective_action_required")
+  correctiveActionDescription      String?   @map("corrective_action_description") @db.Text
+  correctiveActionDueDate          DateTime? @map("corrective_action_due_date") @db.Date
+  correctiveActionCompletionDate   DateTime? @map("corrective_action_completion_date") @db.Date
+  verificationRequired             Boolean   @default(true) @map("verification_required")
+  verificationMethod               String?   @map("verification_method") @db.VarChar(255)
+  verificationDate                 DateTime? @map("verification_date") @db.Date
+  verificationResult               String    @default("pending") @map("verification_result") @db.VarChar(50)
+  verifiedByUserId                 Int?      @map("verified_by_user_id")
+  status                           String    @default("open") @db.VarChar(50)
+  relatedCapaId                    Int?      @map("related_capa_id")
+  createdAt                        DateTime  @default(now()) @map("created_at")
+  updatedAt                        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  supplier     Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  detectedBy   User        @relation("SupplierNonconformityDetector", fields: [detectedByUserId], references: [id], onDelete: Restrict)
+  verifiedBy   User?       @relation("SupplierNonconformityVerifier", fields: [verifiedByUserId], references: [id])
+  relatedCapa  CapaRecord? @relation(fields: [relatedCapaId], references: [id])
+
+  @@map("supplier_nonconformities")
+}
+
+// Equipment Management Models
+model EquipmentCategory {
+  id                   Int       @id @default(autoincrement())
+  categoryName         String    @unique @map("category_name") @db.VarChar(150)
+  description          String?   @db.Text
+  requiresCalibration  Boolean   @default(false) @map("requires_calibration")
+  requiresMaintenance  Boolean   @default(true) @map("requires_maintenance")
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  equipments Equipment[]
+
+  @@map("equipment_categories")
+}
+
+model Equipment {
+  id                     Int       @id @default(autoincrement())
+  equipmentCode          String    @unique @map("equipment_code") @db.VarChar(50)
+  equipmentName          String    @map("equipment_name") @db.VarChar(255)
+  categoryId             Int       @map("category_id")
+  manufacturer           String?   @db.VarChar(255)
+  model                  String?   @db.VarChar(255)
+  serialNumber           String?   @map("serial_number") @db.VarChar(255)
+  purchaseDate           DateTime? @map("purchase_date") @db.Date
+  purchaseCost           Decimal?  @map("purchase_cost") @db.Decimal(12, 2)
+  supplierId             Int?      @map("supplier_id")
+  location               String?   @db.VarChar(255)
+  departmentId           Int?      @map("department_id")
+  responsibleUserId      Int?      @map("responsible_user_id")
+  equipmentStatus        String    @default("active") @map("equipment_status") @db.VarChar(50)
+  criticality            String    @default("medium") @map("criticality") @db.VarChar(50)
+  requiresCalibration    Boolean   @default(false) @map("requires_calibration")
+  calibrationFrequencyMonths Int?  @map("calibration_frequency_months")
+  nextCalibrationDate    DateTime? @map("next_calibration_date") @db.Date
+  requiresMaintenance    Boolean   @default(true) @map("requires_maintenance")
+  maintenanceFrequencyMonths Int?  @map("maintenance_frequency_months")
+  nextMaintenanceDate    DateTime? @map("next_maintenance_date") @db.Date
+  warrantyExpiryDate     DateTime? @map("warranty_expiry_date") @db.Date
+  insuranceExpiryDate    DateTime? @map("insurance_expiry_date") @db.Date
+  specifications         String?   @db.Text
+  operatingInstructions  String?   @map("operating_instructions") @db.Text
+  safetyRequirements     String?   @map("safety_requirements") @db.Text
+  disposalDate           DateTime? @map("disposal_date") @db.Date
+  disposalMethod         String?   @map("disposal_method") @db.VarChar(255)
+  replacementEquipmentId Int?      @map("replacement_equipment_id")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  category            EquipmentCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  supplier            Supplier?          @relation(fields: [supplierId], references: [id])
+  department          Department?        @relation(fields: [departmentId], references: [id])
+  responsibleUser     User?              @relation("EquipmentResponsible", fields: [responsibleUserId], references: [id])
+  replacementEquipment Equipment?        @relation("EquipmentReplacement", fields: [replacementEquipmentId], references: [id])
+  replacedEquipments  Equipment[]        @relation("EquipmentReplacement")
+  calibrationRecords  CalibrationRecord[]
+  maintenanceRecords  MaintenanceRecord[]
+
+  @@map("equipment")
+}
+
+model CalibrationRecord {
+  id                     Int       @id @default(autoincrement())
+  equipmentId            Int       @map("equipment_id")
+  calibrationCode        String    @unique @map("calibration_code") @db.VarChar(50)
+  calibrationDate        DateTime  @map("calibration_date") @db.Date
+  calibrationType        String    @map("calibration_type") @db.VarChar(50)
+  calibratedByUserId     Int?      @map("calibrated_by_user_id")
+  externalLaboratory     String?   @map("external_laboratory") @db.VarChar(255)
+  certificateNumber      String?   @map("certificate_number") @db.VarChar(100)
+  calibrationStandard    String?   @map("calibration_standard") @db.VarChar(255)
+  traceabilityReference  String?   @map("traceability_reference") @db.VarChar(255)
+  measurementRange       String?   @map("measurement_range") @db.VarChar(255)
+  uncertainty            String?   @db.VarChar(255)
+  environmentalConditions String?  @map("environmental_conditions") @db.Text
+  calibrationResults     Json?     @map("calibration_results")
+  calibrationStatus      String    @map("calibration_status") @db.VarChar(50)
+  adjustmentsMade        String?   @map("adjustments_made") @db.Text
+  nextCalibrationDate    DateTime  @map("next_calibration_date") @db.Date
+  calibrationCost        Decimal?  @map("calibration_cost") @db.Decimal(10, 2)
+  calibrationCertificatePath String? @map("calibration_certificate_path") @db.VarChar(512)
+  nonconformitiesFound   String?   @map("nonconformities_found") @db.Text
+  recommendations        String?   @db.Text
+  approvedByUserId       Int?      @map("approved_by_user_id")
+  approvalDate           DateTime? @map("approval_date") @db.Date
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  equipment    Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  calibratedBy User?     @relation("CalibrationPerformer", fields: [calibratedByUserId], references: [id])
+  approvedBy   User?     @relation("CalibrationApprover", fields: [approvedByUserId], references: [id])
+
+  @@map("calibration_records")
+}
+
+model MaintenanceRecord {
+  id                      Int       @id @default(autoincrement())
+  equipmentId             Int       @map("equipment_id")
+  maintenanceCode         String    @unique @map("maintenance_code") @db.VarChar(50)
+  maintenanceDate         DateTime  @map("maintenance_date") @db.Date
+  maintenanceType         String    @map("maintenance_type") @db.VarChar(50)
+  performedByUserId       Int?      @map("performed_by_user_id")
+  externalServiceProvider String?   @map("external_service_provider") @db.VarChar(255)
+  maintenanceDescription  String    @map("maintenance_description") @db.Text
+  workPerformed           String?   @map("work_performed") @db.Text
+  partsReplaced           String?   @map("parts_replaced") @db.Text
+  partsCost               Decimal?  @map("parts_cost") @db.Decimal(10, 2)
+  laborHours              Decimal?  @map("labor_hours") @db.Decimal(5, 2)
+  laborCost               Decimal?  @map("labor_cost") @db.Decimal(10, 2)
+  downtimeHours           Decimal?  @map("downtime_hours") @db.Decimal(5, 2)
+  maintenanceStatus       String    @default("scheduled") @map("maintenance_status") @db.VarChar(50)
+  completionDate          DateTime? @map("completion_date") @db.Date
+  qualityCheckPerformed   Boolean   @default(false) @map("quality_check_performed")
+  qualityCheckResults     String?   @map("quality_check_results") @db.Text
+  nextMaintenanceDate     DateTime? @map("next_maintenance_date") @db.Date
+  maintenanceNotes        String?   @map("maintenance_notes") @db.Text
+  photosAttachments       String?   @map("photos_attachments") @db.Text
+  approvedByUserId        Int?      @map("approved_by_user_id")
+  approvalDate            DateTime? @map("approval_date") @db.Date
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  performedBy User?     @relation("MaintenancePerformer", fields: [performedByUserId], references: [id])
+  approvedBy  User?     @relation("MaintenanceApprover", fields: [approvedByUserId], references: [id])
+
+  @@map("maintenance_records")
+}
+
+// Management Review Models
+model ManagementReviewMeeting {
+  id                            Int       @id @default(autoincrement())
+  meetingCode                   String    @unique @map("meeting_code") @db.VarChar(50)
+  meetingTitle                  String    @map("meeting_title") @db.VarChar(255)
+  meetingDate                   DateTime  @map("meeting_date") @db.Date
+  meetingTime                   DateTime? @map("meeting_time") @db.Time
+  location                      String?   @db.VarChar(255)
+  chairmanUserId                Int       @map("chairman_user_id")
+  secretaryUserId               Int?      @map("secretary_user_id")
+  meetingDurationHours          Decimal?  @map("meeting_duration_hours") @db.Decimal(3, 1)
+  meetingStatus                 String    @default("planned") @map("meeting_status") @db.VarChar(50)
+  reviewPeriodStart             DateTime  @map("review_period_start") @db.Date
+  reviewPeriodEnd               DateTime  @map("review_period_end") @db.Date
+  agenda                        String?   @db.Text
+  objectives                    String?   @db.Text
+  previousMeetingId             Int?      @map("previous_meeting_id")
+  nextScheduledDate             DateTime? @map("next_scheduled_date") @db.Date
+  meetingMinutes                String?   @map("meeting_minutes") @db.Text
+  keyDecisions                  String?   @map("key_decisions") @db.Text
+  actionItemsSummary            String?   @map("action_items_summary") @db.Text
+  overallQmsEffectivenessRating Int?      @map("overall_qms_effectiveness_rating")
+  customerSatisfactionTrend     String?   @default("unknown") @map("customer_satisfaction_trend") @db.VarChar(50)
+  processPerformanceTrend       String?   @default("unknown") @map("process_performance_trend") @db.VarChar(50)
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  chairman        User                           @relation("MeetingChairman", fields: [chairmanUserId], references: [id], onDelete: Restrict)
+  secretary       User?                          @relation("MeetingSecretary", fields: [secretaryUserId], references: [id])
+  previousMeeting ManagementReviewMeeting?       @relation("MeetingSequence", fields: [previousMeetingId], references: [id])
+  nextMeetings    ManagementReviewMeeting[]      @relation("MeetingSequence")
+  participants    ManagementReviewParticipant[]
+  inputs          ManagementReviewInput[]
+  actions         ManagementReviewAction[]
+
+  @@map("management_review_meetings")
+}
+
+model ManagementReviewParticipant {
+  id               Int      @id @default(autoincrement())
+  meetingId        Int      @map("meeting_id")
+  userId           Int      @map("user_id")
+  role             String?  @db.VarChar(100)
+  attendanceStatus String   @default("invited") @map("attendance_status") @db.VarChar(50)
+  invitationSentDate DateTime? @map("invitation_sent_date") @db.Date
+  responseDate     DateTime? @map("response_date") @db.Date
+  contributionNotes String? @map("contribution_notes") @db.Text
+
+  // Relations
+  meeting ManagementReviewMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+  @@map("management_review_participants")
+}
+
+model ManagementReviewInput {
+  id                    Int      @id @default(autoincrement())
+  meetingId             Int      @map("meeting_id")
+  inputCategory         String   @map("input_category") @db.VarChar(100)
+  inputTitle            String   @map("input_title") @db.VarChar(255)
+  inputDescription      String?  @map("input_description") @db.Text
+  inputData             Json?    @map("input_data")
+  presentedByUserId     Int?     @map("presented_by_user_id")
+  supportingDocuments   String?  @map("supporting_documents") @db.Text
+  keyFindings           String?  @map("key_findings") @db.Text
+  recommendations       String?  @db.Text
+  priority              Priority @default(medium)
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  // Relations
+  meeting     ManagementReviewMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  presentedBy User?                   @relation("ReviewInputPresenter", fields: [presentedByUserId], references: [id])
+
+  @@map("management_review_inputs")
+}
+
+model ManagementReviewAction {
+  id                         Int       @id @default(autoincrement())
+  meetingId                  Int       @map("meeting_id")
+  actionCode                 String    @map("action_code") @db.VarChar(50)
+  actionDescription          String    @map("action_description") @db.Text
+  actionCategory             String    @map("action_category") @db.VarChar(100)
+  assignedToUserId           Int       @map("assigned_to_user_id")
+  dueDate                    DateTime  @map("due_date") @db.Date
+  priority                   Priority  @default(medium)
+  status                     String    @default("open") @map("status") @db.VarChar(50)
+  progressPercentage         Int       @default(0) @map("progress_percentage")
+  completionDate             DateTime? @map("completion_date") @db.Date
+  completionNotes            String?   @map("completion_notes") @db.Text
+  effectivenessReviewRequired Boolean  @default(false) @map("effectiveness_review_required")
+  effectivenessReviewDate    DateTime? @map("effectiveness_review_date") @db.Date
+  effectivenessRating        Int?      @map("effectiveness_rating")
+  lessonsLearned             String?   @map("lessons_learned") @db.Text
+  relatedRiskId              Int?      @map("related_risk_id")
+  relatedOpportunityId       Int?      @map("related_opportunity_id")
+  budgetAllocated            Decimal?  @map("budget_allocated") @db.Decimal(10, 2)
+  actualCost                 Decimal?  @map("actual_cost") @db.Decimal(10, 2)
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  meeting            ManagementReviewMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  assignedTo         User                    @relation("ReviewActionAssignee", fields: [assignedToUserId], references: [id], onDelete: Restrict)
+  relatedRisk        RiskRegister?           @relation(fields: [relatedRiskId], references: [id])
+  relatedOpportunity Opportunity?            @relation(fields: [relatedOpportunityId], references: [id])
+
+  @@unique([meetingId, actionCode])
+  @@map("management_review_actions")
+}
+
+// Notification Models
+enum NotificationType {
+  task_assignment
+  due_date_reminder
+  approval_request
+  status_update
+  system_alert
+  general_announcement
+
+  @@map("notification_type")
+}
+
+enum DeliveryMethod {
+  in_app
+  email
+  sms
+  push
+
+  @@map("delivery_method")
+}
+
+enum DeliveryStatus {
+  pending
+  sent
+  delivered
+  failed
+
+  @@map("delivery_status")
+}
+
+model Notification {
+  id                  Int              @id @default(autoincrement())
+  recipientUserId     Int              @map("recipient_user_id")
+  notificationType    NotificationType @map("notification_type")
+  title               String           @db.VarChar(255)
+  message             String           @db.Text
+  priority            Priority         @default(medium)
+  isRead              Boolean          @default(false) @map("is_read")
+  isArchived          Boolean          @default(false) @map("is_archived")
+  readAt              DateTime?        @map("read_at")
+  actionRequired      Boolean          @default(false) @map("action_required")
+  actionUrl           String?          @map("action_url") @db.VarChar(512)
+  relatedEntityType   String?          @map("related_entity_type") @db.VarChar(100)
+  relatedEntityId     Int?             @map("related_entity_id")
+  senderUserId        Int?             @map("sender_user_id")
+  scheduledSendTime   DateTime?        @map("scheduled_send_time")
+  sentAt              DateTime?        @map("sent_at")
+  deliveryMethod      DeliveryMethod   @default(in_app) @map("delivery_method")
+  deliveryStatus      DeliveryStatus   @default(pending) @map("delivery_status")
+  expiresAt           DateTime?        @map("expires_at")
+  createdAt           DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  recipient User  @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  sender    User? @relation("NotificationSender", fields: [senderUserId], references: [id])
+
+  @@map("notifications")
+}
+
+// System Models
+model SystemSetting {
+  id                    Int       @id @default(autoincrement())
+  settingKey            String    @unique @map("setting_key") @db.VarChar(100)
+  settingValue          String?   @map("setting_value") @db.Text
+  settingType           String    @default("string") @map("setting_type") @db.VarChar(50)
+  category              String?   @db.VarChar(100)
+  description           String?   @db.Text
+  isUserConfigurable    Boolean   @default(false) @map("is_user_configurable")
+  requiresRestart       Boolean   @default(false) @map("requires_restart")
+  lastModifiedByUserId  Int?      @map("last_modified_by_user_id")
+  lastModifiedAt        DateTime  @default(now()) @updatedAt @map("last_modified_at")
+
+  // Relations
+  lastModifiedBy User? @relation("SettingModifier", fields: [lastModifiedByUserId], references: [id])
+
+  @@map("system_settings")
+}
+
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @map("user_id")
+  action       String   @db.VarChar(100)
+  entityType   String   @map("entity_type") @db.VarChar(100)
+  entityId     Int?     @map("entity_id")
+  oldValues    Json?    @map("old_values")
+  newValues    Json?    @map("new_values")
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  sessionId    String?  @map("session_id") @db.VarChar(255)
+  requestId    String?  @map("request_id") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model ErrorLog {
+  id               Int       @id @default(autoincrement())
+  errorLevel       String    @default("error") @map("error_level") @db.VarChar(50)
+  errorMessage     String    @map("error_message") @db.Text
+  errorCode        String?   @map("error_code") @db.VarChar(50)
+  stackTrace       String?   @map("stack_trace") @db.Text
+  userId           Int?      @map("user_id")
+  requestUrl       String?   @map("request_url") @db.Text
+  requestMethod    String?   @map("request_method") @db.VarChar(10)
+  requestData      Json?     @map("request_data")
+  ipAddress        String?   @map("ip_address") @db.VarChar(45)
+  userAgent        String?   @map("user_agent") @db.Text
+  sessionId        String?   @map("session_id") @db.VarChar(255)
+  resolved         Boolean   @default(false)
+  resolvedByUserId Int?      @map("resolved_by_user_id")
+  resolvedAt       DateTime? @map("resolved_at")
+  resolutionNotes  String?   @map("resolution_notes") @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user       User? @relation("ErrorUser", fields: [userId], references: [id])
+  resolvedBy User? @relation("ErrorResolver", fields: [resolvedByUserId], references: [id])
+
+  @@map("error_logs")
+}
+
+// KPI Models
+model KpiDefinition {
+  id                 Int      @id @default(autoincrement())
+  kpiCode            String   @unique @map("kpi_code") @db.VarChar(50)
+  kpiName            String   @map("kpi_name") @db.VarChar(255)
+  description        String?  @db.Text
+  category           String?  @db.VarChar(100)
+  measurementUnit    String?  @map("measurement_unit") @db.VarChar(50)
+  calculationMethod  String?  @map("calculation_method") @db.Text
+  targetValue        Decimal? @map("target_value") @db.Decimal(10, 2)
+  thresholdRed       Decimal? @map("threshold_red") @db.Decimal(10, 2)
+  thresholdYellow    Decimal? @map("threshold_yellow") @db.Decimal(10, 2)
+  thresholdGreen     Decimal? @map("threshold_green") @db.Decimal(10, 2)
+  frequency          String   @default("monthly") @db.VarChar(50)
+  responsibleUserId  Int?     @map("responsible_user_id")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  responsibleUser User?      @relation("KpiResponsible", fields: [responsibleUserId], references: [id])
+  values          KpiValue[]
+
+  @@map("kpi_definitions")
+}
+
+model KpiValue {
+  id               Int       @id @default(autoincrement())
+  kpiId            Int       @map("kpi_id")
+  measurementDate  DateTime  @map("measurement_date") @db.Date
+  actualValue      Decimal   @map("actual_value") @db.Decimal(10, 2)
+  targetValue      Decimal?  @map("target_value") @db.Decimal(10, 2)
+  status           String    @default("unknown") @db.VarChar(50)
+  notes            String?   @db.Text
+  dataSource       String?   @map("data_source") @db.VarChar(255)
+  recordedByUserId Int       @map("recorded_by_user_id")
+  approvedByUserId Int?      @map("approved_by_user_id")
+  approvalDate     DateTime? @map("approval_date") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  kpi        KpiDefinition @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  recordedBy User          @relation("KpiRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+  approvedBy User?         @relation("KpiApprover", fields: [approvedByUserId], references: [id])
+
+  @@unique([kpiId, measurementDate])
+  @@map("kpi_values")
+}

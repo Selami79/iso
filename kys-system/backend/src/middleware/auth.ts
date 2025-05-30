@@ -277,7 +277,7 @@ export const generateTokens = (user: { id: number; username: string; email: stri
       email: user.email,
       type: 'access'
     },
-    config.jwt.secret,
+    config.jwt.secret as string,
     { 
       expiresIn: config.jwt.expiresIn,
       issuer: 'kys-api',
@@ -292,7 +292,7 @@ export const generateTokens = (user: { id: number; username: string; email: stri
       email: user.email,
       type: 'refresh'
     },
-    config.jwt.refreshSecret,
+    config.jwt.refreshSecret as string,
     { 
       expiresIn: config.jwt.refreshExpiresIn,
       issuer: 'kys-api',

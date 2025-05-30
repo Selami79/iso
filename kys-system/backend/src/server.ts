@@ -14,19 +14,6 @@ import { authMiddleware } from '@/middleware/auth';
 
 // Import route modules
 import authRoutes from '@/modules/auth/routes';
-import userRoutes from '@/modules/users/routes';
-import documentRoutes from '@/modules/documents/routes';
-import capaRoutes from '@/modules/capa/routes';
-import auditRoutes from '@/modules/audit/routes';
-import riskRoutes from '@/modules/risk/routes';
-import trainingRoutes from '@/modules/training/routes';
-import customerRoutes from '@/modules/customer/routes';
-import supplierRoutes from '@/modules/supplier/routes';
-import equipmentRoutes from '@/modules/equipment/routes';
-import managementReviewRoutes from '@/modules/management-review/routes';
-import notificationRoutes from '@/modules/notifications/routes';
-import reportingRoutes from '@/modules/reporting/routes';
-import systemRoutes from '@/modules/system/routes';
 
 const app = express();
 
@@ -102,19 +89,9 @@ const apiRouter = express.Router();
 apiRouter.use('/auth', authRoutes);
 
 // Protected routes (authentication required)
-apiRouter.use('/users', authMiddleware, userRoutes);
-apiRouter.use('/documents', authMiddleware, documentRoutes);
-apiRouter.use('/capa', authMiddleware, capaRoutes);
-apiRouter.use('/audits', authMiddleware, auditRoutes);
-apiRouter.use('/risks', authMiddleware, riskRoutes);
-apiRouter.use('/training', authMiddleware, trainingRoutes);
-apiRouter.use('/customers', authMiddleware, customerRoutes);
-apiRouter.use('/suppliers', authMiddleware, supplierRoutes);
-apiRouter.use('/equipment', authMiddleware, equipmentRoutes);
-apiRouter.use('/management-review', authMiddleware, managementReviewRoutes);
-apiRouter.use('/notifications', authMiddleware, notificationRoutes);
-apiRouter.use('/reporting', authMiddleware, reportingRoutes);
-apiRouter.use('/system', authMiddleware, systemRoutes);
+// Other modules will be added as they are implemented
+// apiRouter.use('/users', authMiddleware, userRoutes);
+// apiRouter.use('/documents', authMiddleware, documentRoutes);
 
 app.use(config.api.prefix, apiRouter);
 

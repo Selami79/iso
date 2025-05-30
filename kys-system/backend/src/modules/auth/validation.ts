@@ -289,7 +289,7 @@ export const auditLogQuerySchema = z.object({
       .refine((val) => !val || val > 0, 'Geçerli bir kullanıcı ID\'si giriniz'),
     action: z
       .string()
-      .optional()
-      .max(100, 'Eylem en fazla 100 karakter olmalı'),
+      .max(100, 'Eylem en fazla 100 karakter olmalı')
+      .optional(),
   })
 });
