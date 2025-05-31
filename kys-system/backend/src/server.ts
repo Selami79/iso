@@ -15,6 +15,9 @@ import { authMiddleware } from '@/middleware/auth';
 // Import route modules
 import authRoutes from '@/modules/auth/routes';
 
+// Import CommonJS modules for CAPA
+const capaRoutes = require('./modules/capa/routes');
+
 const app = express();
 
 // Trust proxy for accurate IP addresses
@@ -89,6 +92,8 @@ const apiRouter = express.Router();
 apiRouter.use('/auth', authRoutes);
 
 // Protected routes (authentication required)
+apiRouter.use('/capa', capaRoutes);
+
 // Other modules will be added as they are implemented
 // apiRouter.use('/users', authMiddleware, userRoutes);
 // apiRouter.use('/documents', authMiddleware, documentRoutes);
