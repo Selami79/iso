@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYS - Auth Test Frontend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-md w-96">
+            <h1 class="text-2xl font-bold mb-6 text-center">KYS Giriş Testi</h1>
+            
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2 class="text-xl mb-4">Giriş Yap</h2>
+                <form id="login" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
+                        <input type="text" id="username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Şifre</label>
+                        <input type="password" id="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                        Giriş Yap
+                    </button>
+                </form>
+                <p class="mt-4 text-center">
+                    <a href="#" onclick="showRegister()" class="text-blue-600 hover:underline">Yeni Hesap Oluştur</a>
+                </p>
+            </div>
+
+            <!-- Register Form (Hidden) -->
+            <div id="registerForm" style="display:none;">
+                <h2 class="text-xl mb-4">Kayıt Ol</h2>
+                <form id="register" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
+                        <input type="text" id="reg_username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">E-posta</label>
+                        <input type="email" id="reg_email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                        <input type="text" id="reg_fullname" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Şifre</label>
+                        <input type="password" id="reg_password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                        Kayıt Ol
+                    </button>
+                </form>
+                <p class="mt-4 text-center">
+                    <a href="#" onclick="showLogin()" class="text-blue-600 hover:underline">Giriş Yap</a>
+                </p>
+            </div>
+
+            <!-- Result -->
+            <div id="result" class="mt-4 p-4 rounded hidden"></div>
+        </div>
+    </div>
+
+    <!-- User Dashboard (Hidden) -->
+    <div id="dashboard" class="hidden min-h-screen p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h1 class="text-2xl font-bold mb-4">KYS Dashboard</h1>
+                <div id="userInfo" class="mb-6"></div>
+                <button onclick="logout()" class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700">
+                    Çıkış Yap
+                </button>
+                
+                <div class="mt-8">
+                    <h2 class="text-xl font-semibold mb-4">API Test</h2>
+                    <div class="space-x-4">
+                        <button onclick="testAPI('/health')" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                            Health Check
+                        </button>
+                        <button onclick="testAPI('/api/v1/auth/users')" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                            List Users
+                        </button>
+                    </div>
+                    <pre id="apiResult" class="mt-4 p-4 bg-gray-100 rounded hidden"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001';
+        let currentUser = null;
+        let authToken = null;
+
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+
+        function showResult(message, isError = false) {
+            const result = document.getElementById('result');
+            result.className = `mt-4 p-4 rounded ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            result.textContent = message;
+            result.classList.remove('hidden');
+            setTimeout(() => result.classList.add('hidden'), 5000);
+        }
+
+        function showDashboard(user, tokens) {
+            currentUser = user;
+            authToken = tokens.accessToken;
+            
+            document.querySelector('.min-h-screen.flex').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            const userInfo = document.getElementById('userInfo');
+            userInfo.innerHTML = `
+                <h2 class="text-lg font-semibold">Hoş Geldiniz, ${user.fullName}!</h2>
+                <p class="text-gray-600">Kullanıcı: ${user.username}</p>
+                <p class="text-gray-600">E-posta: ${user.email}</p>
+                <p class="text-gray-600">Rol: ${user.roles.join(', ')}</p>
+                <p class="text-gray-600">Admin: ${user.isSystemAdmin ? 'Evet' : 'Hayır'}</p>
+            `;
+        }
+
+        function logout() {
+            currentUser = null;
+            authToken = null;
+            document.querySelector('.min-h-screen.flex').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            showResult('Çıkış yapıldı');
+        }
+
+        async function testAPI(endpoint) {
+            try {
+                const response = await fetch(API_URL + endpoint, {
+                    headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+                });
+                const data = await response.json();
+                
+                const apiResult = document.getElementById('apiResult');
+                apiResult.textContent = JSON.stringify(data, null, 2);
+                apiResult.classList.remove('hidden');
+            } catch (error) {
+                alert('API Error: ' + error.message);
+            }
+        }
+
+        // Login handler
+        document.getElementById('login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(API_URL + '/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('Giriş başarılı!');
+                    showDashboard(data.user, data.tokens);
+                } else {
+                    showResult(data.error || 'Giriş başarısız', true);
+                }
+            } catch (error) {
+                showResult('Bağlantı hatası: ' + error.message, true);
+            }
+        });
+
+        // Register handler
+        document.getElementById('register').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('reg_username').value;
+            const email = document.getElementById('reg_email').value;
+            const fullName = document.getElementById('reg_fullname').value;
+            const password = document.getElementById('reg_password').value;
+            
+            try {
+                const response = await fetch(API_URL + '/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, fullName, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult('Kayıt başarılı! Giriş yapılıyor...');
+                    showDashboard(data.user, data.tokens);
+                } else {
+                    showResult(data.error || 'Kayıt başarısız', true);
+                }
+            } catch (error) {
+                showResult('Bağlantı hatası: ' + error.message, true);
+            }
+        });
+
+        // Test credentials hint
+        console.log('Test Credentials:');
+        console.log('Admin: admin / Admin123');
+        console.log('User: test_user / Test123');
+    </script>
+</body>
+</html>

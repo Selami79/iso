@@ -1,0 +1,12 @@
+# İç Denetim Prosedürü
+
+## Amaç
+Bu prosedürün amacı, kalite yönetim sisteminin ISO 9001 standardına uygunluğunu doğrulamak için iç denetimlerin planlanması ve yürütülmesini sağlamaktır.
+
+## Kapsam
+Tüm departmanlar ve KYS süreçleri
+
+## Sorumluluklar
+- Kalite Müdürü: Denetim planının onaylanması
+- Denetim Ekibi: Denetimlerin yürütülmesi
+- Departman Yöneticileri: Denetim bulgularının kapatılması

@@ -1,0 +1,11 @@
+# Kalite Politikası
+
+Bu kuruluşun kalite politikası belgesidir.
+
+## Amaç
+Müşteri memnuniyetini sağlamak ve ISO 9001 standartlarına uygun çalışmak.
+
+## İlkeler
+1. Müşteri odaklılık
+2. Sürekli iyileştirme
+3. Kalite standartlarına uygunluk

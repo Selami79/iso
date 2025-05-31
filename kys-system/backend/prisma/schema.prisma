@@ -1,8 +1,5 @@
-// KYS (Kalite Yönetim Sistemi) Minimal Prisma Schema for Testing
-// ISO 9001 Quality Management System Database Schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl"]
 }
 
@@ -11,133 +8,1461 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// CORE TABLES FOR TESTING
-// ============================================================================
-
 model Department {
-  id                 Int          @id @default(autoincrement())
-  departmentName     String       @unique @map("department_name") @db.VarChar(150)
-  description        String?      @db.Text
-  managerUserId      Int?         @map("manager_user_id")
-  parentDepartmentId Int?         @map("parent_department_id")
-  isActive           Boolean      @default(true) @map("is_active")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
+  id                     Int                      @id @default(autoincrement())
+  departmentName         String                   @unique @map("department_name") @db.VarChar(150)
+  description            String?
+  managerUserId          Int?                     @map("manager_user_id")
+  parentDepartmentId     Int?                     @map("parent_department_id")
+  isActive               Boolean?                 @default(true) @map("is_active")
+  createdAt              DateTime?                @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt              DateTime?                @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  capa_records           capa_records[]
+  manager                User?                    @relation("DepartmentManager", fields: [managerUserId], references: [id], onUpdate: NoAction, map: "fk_manager_user")
+  parentDepartment       Department?              @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id], onUpdate: NoAction, map: "fk_parent_department")
+  childDepartments       Department[]             @relation("DepartmentHierarchy")
+  equipment              equipment[]
+  opportunities_register opportunities_register[]
+  risk_register          risk_register[]
+  users                  User[]                   @relation("UserDepartment")
 
-  // Relations
-  manager           User?               @relation("DepartmentManager", fields: [managerUserId], references: [id])
-  parentDepartment  Department?         @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
-  childDepartments  Department[]        @relation("DepartmentHierarchy")
-  users             User[]              @relation("UserDepartment")
-
+  @@index([departmentName], map: "idx_department_name")
+  @@index([managerUserId], map: "idx_manager_user_id")
+  @@index([parentDepartmentId], map: "idx_parent_department_id")
   @@map("departments")
 }
 
 model User {
-  id                  Int      @id @default(autoincrement())
-  username            String   @unique @db.VarChar(100)
-  passwordHash        String   @map("password_hash") @db.VarChar(255)
-  email               String   @unique @db.VarChar(255)
-  fullName            String   @map("full_name") @db.VarChar(255)
-  departmentId        Int?     @map("department_id")
-  position            String?  @db.VarChar(150)
-  phone               String?  @db.VarChar(50)
-  employeeNumber      String?  @unique @map("employee_number") @db.VarChar(50)
-  hireDate            DateTime? @map("hire_date") @db.Date
-  isActive            Boolean  @default(true) @map("is_active")
-  isSystemAdmin       Boolean  @default(false) @map("is_system_admin")
-  emailVerified       Boolean  @default(false) @map("email_verified")
-  lastLoginAt         DateTime? @map("last_login_at")
-  passwordChangedAt   DateTime @default(now()) @map("password_changed_at")
-  avatarUrl           String?  @map("avatar_url") @db.VarChar(512)
-  timezone            String   @default("Europe/Istanbul") @db.VarChar(50)
-  language            String   @default("tr") @db.VarChar(10)
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                                                                              Int                              @id @default(autoincrement())
+  username                                                                        String                           @unique @db.VarChar(100)
+  passwordHash                                                                    String                           @map("password_hash") @db.VarChar(255)
+  email                                                                           String                           @unique @db.VarChar(255)
+  fullName                                                                        String                           @map("full_name") @db.VarChar(255)
+  departmentId                                                                    Int?                             @map("department_id")
+  position                                                                        String?                          @db.VarChar(150)
+  phone                                                                           String?                          @db.VarChar(50)
+  employeeNumber                                                                  String?                          @unique @map("employee_number") @db.VarChar(50)
+  hireDate                                                                        DateTime?                        @map("hire_date") @db.Date
+  isActive                                                                        Boolean?                         @default(true) @map("is_active")
+  isSystemAdmin                                                                   Boolean?                         @default(false) @map("is_system_admin")
+  emailVerified                                                                   Boolean?                         @default(false) @map("email_verified")
+  lastLoginAt                                                                     DateTime?                        @map("last_login_at") @db.Timestamp(6)
+  passwordChangedAt                                                               DateTime?                        @default(now()) @map("password_changed_at") @db.Timestamp(6)
+  avatarUrl                                                                       String?                          @map("avatar_url") @db.VarChar(512)
+  timezone                                                                        String?                          @default("Europe/Istanbul") @db.VarChar(50)
+  language                                                                        String?                          @default("tr") @db.VarChar(10)
+  createdAt                                                                       DateTime?                        @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                                                       DateTime?                        @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  audit_checklists                                                                audit_checklists[]
+  audit_findings_audit_findings_auditee_user_idTousers                            audit_findings[]                 @relation("audit_findings_auditee_user_idTousers")
+  audit_findings_audit_findings_auditor_user_idTousers                            audit_findings[]                 @relation("audit_findings_auditor_user_idTousers")
+  audit_plans                                                                     audit_plans[]
+  audit_programs                                                                  audit_programs[]
+  audit_team_members                                                              audit_team_members[]
+  calibration_records                                                             calibration_records[]
+  capa_action_items                                                               capa_action_items[]
+  capa_documents                                                                  capa_documents[]
+  capa_records_capa_records_detected_by_user_idTousers                            capa_records[]                   @relation("capa_records_detected_by_user_idTousers")
+  capa_records_capa_records_responsible_user_idTousers                            capa_records[]                   @relation("capa_records_responsible_user_idTousers")
+  capa_records_capa_records_verified_by_user_idTousers                            capa_records[]                   @relation("capa_records_verified_by_user_idTousers")
+  customer_complaints_customer_complaints_assigned_to_user_idTousers              customer_complaints[]            @relation("customer_complaints_assigned_to_user_idTousers")
+  customer_complaints_customer_complaints_received_by_user_idTousers              customer_complaints[]            @relation("customer_complaints_received_by_user_idTousers")
+  customers                                                                       customers[]
+  managedDepartments                                                              Department[]                     @relation("DepartmentManager")
+  documentAccessLogs                                                              DocumentAccessLog[]
+  document_approvals_document_approvals_approver_user_idTousers                   document_approvals[]             @relation("document_approvals_approver_user_idTousers")
+  document_approvals_document_approvals_delegated_to_user_idTousers               document_approvals[]             @relation("document_approvals_delegated_to_user_idTousers")
+  approvedRevisions                                                               DocumentRevision[]               @relation("RevisionApprover")
+  document_revisions_document_revisions_created_by_user_idTousers                 DocumentRevision[]               @relation("document_revisions_created_by_user_idTousers")
+  documents_documents_owner_user_idTousers                                        Document[]                       @relation("documents_owner_user_idTousers")
+  documents_documents_responsible_user_idTousers                                  Document[]                       @relation("documents_responsible_user_idTousers")
+  employee_competencies_employee_competencies_assessed_by_user_idTousers          employee_competencies[]          @relation("employee_competencies_assessed_by_user_idTousers")
+  employee_competencies_employee_competencies_user_idTousers                      employee_competencies[]          @relation("employee_competencies_user_idTousers")
+  equipment                                                                       equipment[]
+  kpi_definitions                                                                 kpi_definitions[]
+  kpi_values                                                                      kpi_values[]
+  maintenance_records                                                             maintenance_records[]
+  management_review_actions_management_review_actions_assigned_to_user_idTousers  management_review_actions[]      @relation("management_review_actions_assigned_to_user_idTousers")
+  management_review_actions_management_review_actions_verified_by_user_idTousers  management_review_actions[]      @relation("management_review_actions_verified_by_user_idTousers")
+  management_review_meetings_management_review_meetings_chaired_by_user_idTousers management_review_meetings[]     @relation("management_review_meetings_chaired_by_user_idTousers")
+  management_review_meetings_management_review_meetings_secretary_user_idTousers  management_review_meetings[]     @relation("management_review_meetings_secretary_user_idTousers")
+  management_review_participants                                                  management_review_participants[]
+  management_review_topics                                                        management_review_topics[]
+  notifications                                                                   notifications[]
+  opportunities_register_opportunities_register_identified_by_user_idTousers      opportunities_register[]         @relation("opportunities_register_identified_by_user_idTousers")
+  opportunities_register_opportunities_register_owner_user_idTousers              opportunities_register[]         @relation("opportunities_register_owner_user_idTousers")
+  risk_assessments                                                                risk_assessments[]
+  risk_register_risk_register_identified_by_user_idTousers                        risk_register[]                  @relation("risk_register_identified_by_user_idTousers")
+  risk_register_risk_register_owner_user_idTousers                                risk_register[]                  @relation("risk_register_owner_user_idTousers")
+  role_permissions                                                                RolePermission[]
+  supplier_evaluations                                                            supplier_evaluations[]
+  supplier_nonconformities_supplier_nonconformities_reported_by_user_idTousers    supplier_nonconformities[]       @relation("supplier_nonconformities_reported_by_user_idTousers")
+  supplier_nonconformities_supplier_nonconformities_verified_by_user_idTousers    supplier_nonconformities[]       @relation("supplier_nonconformities_verified_by_user_idTousers")
+  tasks_tasks_assigned_by_user_idTousers                                          tasks[]                          @relation("tasks_assigned_by_user_idTousers")
+  tasks_tasks_assigned_to_user_idTousers                                          tasks[]                          @relation("tasks_assigned_to_user_idTousers")
+  training_enrollments                                                            training_enrollments[]
+  training_needs_training_needs_identified_by_user_idTousers                      training_needs[]                 @relation("training_needs_identified_by_user_idTousers")
+  training_needs_training_needs_user_idTousers                                    training_needs[]                 @relation("training_needs_user_idTousers")
+  training_sessions                                                               training_sessions[]
+  user_activity_logs                                                              user_activity_logs[]
+  assignedByRoles                                                                 UserRole[]                       @relation("UserRoleAssigner")
+  userRoles                                                                       UserRole[]
+  department                                                                      Department?                      @relation("UserDepartment", fields: [departmentId], references: [id], onUpdate: NoAction)
 
-  // Relations
-  department          Department?         @relation("UserDepartment", fields: [departmentId], references: [id])
-  managedDepartments  Department[]        @relation("DepartmentManager")
-  userRoles           UserRole[]
-  assignedByRoles     UserRole[]          @relation("UserRoleAssigner")
-
+  @@index([email], map: "idx_email")
+  @@index([employeeNumber], map: "idx_employee_number")
+  @@index([isActive], map: "idx_is_active")
+  @@index([username], map: "idx_username")
+  @@index([departmentId], map: "idx_users_department_id")
   @@map("users")
 }
 
 model Role {
-  id           Int      @id @default(autoincrement())
-  roleName     String   @unique @map("role_name") @db.VarChar(100)
-  description  String?  @db.Text
-  isSystemRole Boolean  @default(false) @map("is_system_role")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  userRoles       UserRole[]
+  id              Int              @id @default(autoincrement())
+  roleName        String           @unique @map("role_name") @db.VarChar(100)
+  description     String?
+  isSystemRole    Boolean?         @default(false) @map("is_system_role")
+  createdAt       DateTime?        @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime?        @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
   rolePermissions RolePermission[]
+  userRoles       UserRole[]
 
+  @@index([roleName], map: "idx_role_name")
   @@map("roles")
 }
 
 model UserRole {
-  userId       Int       @map("user_id")
-  roleId       Int       @map("role_id")
-  assignedByUserId Int?  @map("assigned_by_user_id")
-  assignedAt   DateTime  @default(now()) @map("assigned_at")
-  expiresAt    DateTime? @map("expires_at")
-  isActive     Boolean   @default(true) @map("is_active")
-
-  // Relations
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role         Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  assignedBy   User?     @relation("UserRoleAssigner", fields: [assignedByUserId], references: [id])
+  userId           Int       @map("user_id")
+  roleId           Int       @map("role_id")
+  assignedByUserId Int?      @map("assigned_by_user_id")
+  assignedAt       DateTime? @default(now()) @map("assigned_at") @db.Timestamp(6)
+  expiresAt        DateTime? @map("expires_at") @db.Timestamp(6)
+  isActive         Boolean?  @default(true) @map("is_active")
+  assignedBy       User?     @relation("UserRoleAssigner", fields: [assignedByUserId], references: [id], onUpdate: NoAction)
+  role             Role      @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([userId, roleId])
+  @@index([roleId], map: "idx_user_roles_role_id")
+  @@index([userId], map: "idx_user_roles_user_id")
   @@map("user_roles")
 }
 
 model Permission {
-  id             Int      @id @default(autoincrement())
-  permissionName String   @unique @map("permission_name") @db.VarChar(150)
-  description    String?  @db.Text
-  moduleName     String?  @map("module_name") @db.VarChar(100)
-  resource       String?  @db.VarChar(100)
-  action         String?  @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  // Relations
+  id              Int              @id @default(autoincrement())
+  permissionName  String           @unique @map("permission_name") @db.VarChar(150)
+  description     String?
+  moduleName      String?          @map("module_name") @db.VarChar(100)
+  resource        String?          @db.VarChar(100)
+  action          String?          @db.VarChar(50)
+  createdAt       DateTime?        @default(now()) @map("created_at") @db.Timestamp(6)
   rolePermissions RolePermission[]
 
+  @@index([moduleName], map: "idx_module_name")
+  @@index([permissionName], map: "idx_permission_name")
   @@map("permissions")
 }
 
 model RolePermission {
-  roleId       Int      @map("role_id")
-  permissionId Int      @map("permission_id")
-  grantedByUserId Int?  @map("granted_by_user_id")
-  grantedAt    DateTime @default(now()) @map("granted_at")
-
-  // Relations
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roleId          Int        @map("role_id")
+  permissionId    Int        @map("permission_id")
+  grantedByUserId Int?       @map("granted_by_user_id")
+  grantedAt       DateTime?  @default(now()) @map("granted_at") @db.Timestamp(6)
+  users           User?      @relation(fields: [grantedByUserId], references: [id], onUpdate: NoAction)
+  permission      Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role            Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([roleId, permissionId])
+  @@index([permissionId], map: "idx_role_permissions_permission_id")
+  @@index([roleId], map: "idx_role_permissions_role_id")
   @@map("role_permissions")
 }
 
-// ============================================================================
-// SYSTEM TABLES
-// ============================================================================
-
 model SystemSetting {
-  id           Int      @id @default(autoincrement())
-  settingKey   String   @unique @map("setting_key") @db.VarChar(100)
-  settingValue String?  @map("setting_value") @db.Text
-  settingType  String   @default("string") @map("setting_type") @db.VarChar(50)
-  description  String?  @db.Text
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           Int       @id @default(autoincrement())
+  settingKey   String    @unique @map("setting_key") @db.VarChar(100)
+  settingValue String?   @map("setting_value")
+  settingType  String?   @map("setting_type") @db.VarChar(50)
+  description  String?
+  is_encrypted Boolean?  @default(false)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
+  @@index([settingKey], map: "idx_setting_key")
   @@map("system_settings")
+}
+
+model DocumentCategory {
+  id               Int                @id @default(autoincrement())
+  categoryName     String             @unique @map("category_name") @db.VarChar(150)
+  description      String?
+  parentCategoryId Int?               @map("parent_category_id")
+  sortOrder        Int?               @default(0) @map("sort_order")
+  isActive         Boolean?           @default(true) @map("is_active")
+  createdAt        DateTime?          @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime?          @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  parentCategory   DocumentCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onUpdate: NoAction)
+  childCategories  DocumentCategory[] @relation("CategoryHierarchy")
+  documents        Document[]
+
+  @@index([categoryName], map: "idx_document_category_name")
+  @@index([parentCategoryId], map: "idx_parent_category_id")
+  @@map("document_categories")
+}
+
+model Document {
+  id                                         Int                      @id @default(autoincrement())
+  documentCode                               String                   @unique @map("document_code") @db.VarChar(50)
+  document_name                              String                   @db.VarChar(255)
+  categoryId                                 Int?                     @map("category_id")
+  documentType                               String                   @map("document_type") @db.VarChar(50)
+  current_version                            String                   @default("1.0") @db.VarChar(20)
+  currentRevisionId                          Int?                     @map("current_revision_id")
+  owner_user_id                              Int
+  responsible_user_id                        Int?
+  description                                String?
+  reviewFrequencyMonths                      Int?                     @default(12) @map("review_frequency_months")
+  nextReviewDate                             DateTime?                @map("next_review_date") @db.Date
+  is_active                                  Boolean?                 @default(true)
+  isControlled                               Boolean?                 @default(true) @map("is_controlled")
+  accessLevel                                String?                  @default("INTERNAL") @map("access_level") @db.VarChar(50)
+  tags                                       String?
+  createdAt                                  DateTime?                @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                  DateTime?                @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  accessLogs                                 DocumentAccessLog[]
+  document_distributions                     document_distributions[]
+  revisions                                  DocumentRevision[]       @relation("DocumentRevisions")
+  category                                   DocumentCategory?        @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
+  users_documents_owner_user_idTousers       User                     @relation("documents_owner_user_idTousers", fields: [owner_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_documents_responsible_user_idTousers User?                    @relation("documents_responsible_user_idTousers", fields: [responsible_user_id], references: [id], onUpdate: NoAction)
+  currentRevision                            DocumentRevision?        @relation("DocumentCurrentRevision", fields: [currentRevisionId], references: [id], onUpdate: NoAction, map: "fk_current_revision")
+
+  @@index([categoryId], map: "idx_category_id")
+  @@index([documentCode], map: "idx_document_code")
+  @@index([document_name], map: "idx_document_name")
+  @@index([documentType], map: "idx_document_type")
+  @@index([categoryId], map: "idx_documents_category_id")
+  @@index([nextReviewDate], map: "idx_next_review_date")
+  @@index([owner_user_id], map: "idx_owner_user_id")
+  @@map("documents")
+}
+
+model DocumentRevision {
+  id                                                 Int                  @id @default(autoincrement())
+  documentId                                         Int                  @map("document_id")
+  revisionNumber                                     String               @map("revision_number") @db.VarChar(20)
+  revision_date                                      DateTime             @db.Date
+  revision_reason                                    String
+  changes_summary                                    String?
+  filePath                                           String?              @map("file_path") @db.VarChar(512)
+  fileSize                                           BigInt?              @map("file_size")
+  file_type                                          String?              @db.VarChar(50)
+  created_by_user_id                                 Int
+  approvalStatus                                     String?              @default("DRAFT") @map("approval_status") @db.VarChar(50)
+  approvedByUserId                                   Int?                 @map("approved_by_user_id")
+  approved_at                                        DateTime?            @db.Timestamp(6)
+  is_major_revision                                  Boolean?             @default(false)
+  createdAt                                          DateTime?            @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                                          DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  accessLogs                                         DocumentAccessLog[]
+  document_approvals                                 document_approvals[]
+  approvedBy                                         User?                @relation("RevisionApprover", fields: [approvedByUserId], references: [id], onUpdate: NoAction)
+  users_document_revisions_created_by_user_idTousers User                 @relation("document_revisions_created_by_user_idTousers", fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  document                                           Document             @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  currentForDocument                                 Document[]           @relation("DocumentCurrentRevision")
+
+  @@index([approvalStatus], map: "idx_approval_status")
+  @@index([created_by_user_id], map: "idx_doc_revisions_created_by")
+  @@index([approvalStatus], map: "idx_document_revisions_approval_status")
+  @@index([documentId], map: "idx_document_revisions_document_id")
+  @@index([revisionNumber], map: "idx_revision_number")
+  @@map("document_revisions")
+}
+
+model DocumentAccessLog {
+  id         Int               @id @default(autoincrement())
+  documentId Int               @map("document_id")
+  revisionId Int?              @map("revision_id")
+  userId     Int               @map("user_id")
+  action     AccessAction
+  ipAddress  String?           @map("ip_address") @db.VarChar(45)
+  userAgent  String?           @map("user_agent")
+  accessedAt DateTime?         @default(now()) @map("accessed_at") @db.Timestamp(6)
+  document   Document          @relation(fields: [documentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  revision   DocumentRevision? @relation(fields: [revisionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([documentId], map: "idx_document_access_logs_document_id")
+  @@index([userId], map: "idx_document_access_logs_user_id")
+  @@map("document_access_logs")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model audit_checklists {
+  id                 Int         @id @default(autoincrement())
+  audit_plan_id      Int
+  area_department    String      @db.VarChar(255)
+  clause_reference   String?     @db.VarChar(100)
+  check_item         String
+  evidence_required  String?
+  auditor_user_id    Int?
+  status             String?     @default("NOT_CHECKED") @db.VarChar(50)
+  findings           String?
+  evidence_collected String?
+  created_at         DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?   @default(now()) @db.Timestamp(6)
+  audit_plans        audit_plans @relation(fields: [audit_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              User?       @relation(fields: [auditor_user_id], references: [id], onUpdate: NoAction)
+
+  @@index([audit_plan_id], map: "idx_checklist_audit_plan_id")
+  @@index([status], map: "idx_checklist_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model audit_findings {
+  id                                          Int           @id @default(autoincrement())
+  audit_plan_id                               Int
+  finding_number                              String        @db.VarChar(50)
+  finding_type                                String        @db.VarChar(50)
+  clause_reference                            String?       @db.VarChar(100)
+  process_area                                String?       @db.VarChar(255)
+  finding_description                         String
+  evidence                                    String?
+  auditor_user_id                             Int
+  auditee_user_id                             Int?
+  acknowledgment_date                         DateTime?     @db.Date
+  capa_required                               Boolean?      @default(false)
+  capa_id                                     Int?
+  status                                      String?       @default("OPEN") @db.VarChar(50)
+  created_at                                  DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at                                  DateTime?     @default(now()) @db.Timestamp(6)
+  audit_plans                                 audit_plans   @relation(fields: [audit_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_audit_findings_auditee_user_idTousers User?         @relation("audit_findings_auditee_user_idTousers", fields: [auditee_user_id], references: [id], onUpdate: NoAction)
+  users_audit_findings_auditor_user_idTousers User          @relation("audit_findings_auditor_user_idTousers", fields: [auditor_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  capa_records                                capa_records? @relation(fields: [capa_id], references: [id], onUpdate: NoAction)
+
+  @@unique([audit_plan_id, finding_number])
+  @@index([auditor_user_id], map: "idx_audit_findings_auditor")
+  @@index([status], map: "idx_finding_status")
+  @@index([finding_type], map: "idx_finding_type")
+  @@index([audit_plan_id], map: "idx_findings_audit_plan_id")
+  @@index([capa_id], map: "idx_findings_capa_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model audit_plans {
+  id                 Int                  @id @default(autoincrement())
+  program_id         Int
+  audit_number       String               @unique @db.VarChar(50)
+  audit_title        String               @db.VarChar(255)
+  audit_type         String               @db.VarChar(50)
+  planned_start_date DateTime             @db.Date
+  planned_end_date   DateTime             @db.Date
+  actual_start_date  DateTime?            @db.Date
+  actual_end_date    DateTime?            @db.Date
+  lead_auditor_id    Int
+  audit_scope        String
+  audit_criteria     String?
+  status             String?              @default("PLANNED") @db.VarChar(50)
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamp(6)
+  audit_checklists   audit_checklists[]
+  audit_findings     audit_findings[]
+  users              User                 @relation(fields: [lead_auditor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  audit_programs     audit_programs       @relation(fields: [program_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  audit_team_members audit_team_members[]
+
+  @@index([audit_number], map: "idx_audit_number")
+  @@index([status], map: "idx_audit_plan_status")
+  @@index([program_id], map: "idx_audit_plans_program_id")
+  @@index([audit_type], map: "idx_audit_type")
+  @@index([lead_auditor_id], map: "idx_lead_auditor_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model audit_programs {
+  id                  Int           @id @default(autoincrement())
+  program_year        Int
+  program_name        String        @db.VarChar(255)
+  description         String?
+  approved_by_user_id Int?
+  approved_date       DateTime?     @db.Date
+  status              String?       @default("DRAFT") @db.VarChar(50)
+  created_at          DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?     @default(now()) @db.Timestamp(6)
+  audit_plans         audit_plans[]
+  users               User?         @relation(fields: [approved_by_user_id], references: [id], onUpdate: NoAction)
+
+  @@unique([program_year, program_name])
+  @@index([status], map: "idx_program_status")
+  @@index([program_year], map: "idx_program_year")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model audit_team_members {
+  id              Int         @id @default(autoincrement())
+  audit_plan_id   Int
+  auditor_user_id Int
+  role            String?     @default("AUDITOR") @db.VarChar(50)
+  assigned_areas  String?
+  created_at      DateTime?   @default(now()) @db.Timestamp(6)
+  audit_plans     audit_plans @relation(fields: [audit_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           User        @relation(fields: [auditor_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([audit_plan_id, auditor_user_id])
+  @@index([audit_plan_id], map: "idx_audit_team_audit_plan_id")
+  @@index([auditor_user_id], map: "idx_auditor_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model calibration_records {
+  id                    Int       @id @default(autoincrement())
+  equipment_id          Int
+  calibration_date      DateTime  @db.Date
+  calibration_type      String?   @db.VarChar(50)
+  performed_by          String?   @db.VarChar(255)
+  calibration_company   String?   @db.VarChar(255)
+  certificate_number    String?   @db.VarChar(100)
+  temperature           Decimal?  @db.Decimal(5, 2)
+  humidity              Decimal?  @db.Decimal(5, 2)
+  calibration_method    String?
+  reference_standards   String?
+  results               String?
+  deviations            String?
+  uncertainties         String?
+  pass_fail             String?   @db.VarChar(10)
+  adjustments_made      String?
+  next_calibration_date DateTime? @db.Date
+  calibration_cost      Decimal?  @db.Decimal(10, 2)
+  report_path           String?   @db.VarChar(512)
+  created_by_user_id    Int
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
+  users                 User      @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipment             equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_by_user_id], map: "idx_calibration_created_by")
+  @@index([calibration_date], map: "idx_calibration_date")
+  @@index([equipment_id], map: "idx_calibration_equipment_id")
+  @@index([pass_fail], map: "idx_pass_fail")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model capa_action_items {
+  id                  Int          @id @default(autoincrement())
+  capa_id             Int
+  action_description  String
+  assigned_to_user_id Int
+  due_date            DateTime     @db.Date
+  completion_date     DateTime?    @db.Date
+  status              String?      @default("PENDING") @db.VarChar(50)
+  completion_notes    String?
+  created_at          DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?    @default(now()) @db.Timestamp(6)
+  users               User         @relation(fields: [assigned_to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  capa_records        capa_records @relation(fields: [capa_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([assigned_to_user_id], map: "idx_action_assigned_to_user_id")
+  @@index([status], map: "idx_action_status")
+  @@index([capa_id], map: "idx_capa_action_items_capa_id")
+}
+
+model capa_documents {
+  id                  Int          @id @default(autoincrement())
+  capa_id             Int
+  document_type       String?      @db.VarChar(100)
+  document_name       String       @db.VarChar(255)
+  file_path           String?      @db.VarChar(512)
+  uploaded_by_user_id Int
+  uploaded_at         DateTime?    @default(now()) @db.Timestamp(6)
+  capa_records        capa_records @relation(fields: [capa_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               User         @relation(fields: [uploaded_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([capa_id], map: "idx_capa_documents_capa_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model capa_records {
+  id                                            Int                        @id @default(autoincrement())
+  capa_number                                   String                     @unique @db.VarChar(50)
+  capa_type                                     String                     @db.VarChar(50)
+  title                                         String                     @db.VarChar(255)
+  description                                   String
+  source_id                                     Int?
+  source_reference                              String?                    @db.VarChar(100)
+  detected_date                                 DateTime                   @db.Date
+  detected_by_user_id                           Int
+  responsible_user_id                           Int
+  department_id                                 Int?
+  priority                                      String?                    @default("MEDIUM") @db.VarChar(50)
+  status                                        String?                    @default("OPEN") @db.VarChar(50)
+  root_cause_analysis                           String?
+  proposed_actions                              String?
+  target_completion_date                        DateTime?                  @db.Date
+  actual_completion_date                        DateTime?                  @db.Date
+  effectiveness_check_date                      DateTime?                  @db.Date
+  effectiveness_verified                        Boolean?                   @default(false)
+  verified_by_user_id                           Int?
+  verification_comments                         String?
+  cost_estimate                                 Decimal?                   @db.Decimal(15, 2)
+  actual_cost                                   Decimal?                   @db.Decimal(15, 2)
+  recurrence_prevention                         String?
+  lessons_learned                               String?
+  created_at                                    DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                                    DateTime?                  @default(now()) @db.Timestamp(6)
+  audit_findings                                audit_findings[]
+  capa_action_items                             capa_action_items[]
+  capa_documents                                capa_documents[]
+  departments                                   Department?                @relation(fields: [department_id], references: [id], onUpdate: NoAction)
+  users_capa_records_detected_by_user_idTousers User                       @relation("capa_records_detected_by_user_idTousers", fields: [detected_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_capa_records_responsible_user_idTousers User                       @relation("capa_records_responsible_user_idTousers", fields: [responsible_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  nonconformity_sources                         nonconformity_sources?     @relation(fields: [source_id], references: [id], onUpdate: NoAction)
+  users_capa_records_verified_by_user_idTousers User?                      @relation("capa_records_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+  customer_complaints                           customer_complaints[]
+  supplier_nonconformities                      supplier_nonconformities[]
+
+  @@index([detected_by_user_id], map: "idx_capa_detected_by")
+  @@index([capa_number], map: "idx_capa_number")
+  @@index([priority], map: "idx_capa_priority")
+  @@index([responsible_user_id], map: "idx_capa_responsible_user_id")
+  @@index([status], map: "idx_capa_status")
+  @@index([capa_type], map: "idx_capa_type")
+  @@index([target_completion_date], map: "idx_target_completion_date")
+}
+
+model competency_categories {
+  id                     Int                      @id @default(autoincrement())
+  category_name          String                   @unique @db.VarChar(150)
+  description            String?
+  is_active              Boolean?                 @default(true)
+  created_at             DateTime?                @default(now()) @db.Timestamp(6)
+  competency_definitions competency_definitions[]
+}
+
+model competency_definitions {
+  id                     Int                     @id @default(autoincrement())
+  competency_code        String                  @unique @db.VarChar(50)
+  competency_name        String                  @db.VarChar(255)
+  category_id            Int?
+  description            String?
+  required_for_positions String?
+  evaluation_criteria    String?
+  is_active              Boolean?                @default(true)
+  created_at             DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?               @default(now()) @db.Timestamp(6)
+  competency_categories  competency_categories?  @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  course_competencies    course_competencies[]
+  employee_competencies  employee_competencies[]
+  training_needs         training_needs[]
+
+  @@index([category_id], map: "idx_competency_category_id")
+  @@index([competency_code], map: "idx_competency_code")
+}
+
+model course_competencies {
+  course_id              Int
+  competency_id          Int
+  competency_definitions competency_definitions @relation(fields: [competency_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  training_courses       training_courses       @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([course_id, competency_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model customer_complaints {
+  id                                                   Int           @id @default(autoincrement())
+  complaint_number                                     String        @unique @db.VarChar(50)
+  customer_id                                          Int
+  complaint_date                                       DateTime      @db.Date
+  received_by_user_id                                  Int
+  complaint_source                                     String?       @db.VarChar(50)
+  complaint_category                                   String?       @db.VarChar(100)
+  complaint_description                                String
+  product_service                                      String?       @db.VarChar(255)
+  order_reference                                      String?       @db.VarChar(100)
+  severity                                             String?       @default("MEDIUM") @db.VarChar(50)
+  assigned_to_user_id                                  Int?
+  investigation_notes                                  String?
+  root_cause                                           String?
+  corrective_action                                    String?
+  response_date                                        DateTime?     @db.Date
+  response_description                                 String?
+  compensation_offered                                 String?
+  status                                               String?       @default("RECEIVED") @db.VarChar(50)
+  customer_satisfied                                   Boolean?
+  satisfaction_notes                                   String?
+  capa_id                                              Int?
+  created_at                                           DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at                                           DateTime?     @default(now()) @db.Timestamp(6)
+  users_customer_complaints_assigned_to_user_idTousers User?         @relation("customer_complaints_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [id], onUpdate: NoAction)
+  capa_records                                         capa_records? @relation(fields: [capa_id], references: [id], onUpdate: NoAction)
+  customers                                            customers     @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_customer_complaints_received_by_user_idTousers User          @relation("customer_complaints_received_by_user_idTousers", fields: [received_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([customer_id], map: "idx_complaint_customer_id")
+  @@index([complaint_date], map: "idx_complaint_date")
+  @@index([complaint_number], map: "idx_complaint_number")
+  @@index([severity], map: "idx_complaint_severity")
+  @@index([status], map: "idx_complaint_status")
+  @@index([received_by_user_id], map: "idx_complaints_received_by")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model customer_feedback {
+  id              Int       @id @default(autoincrement())
+  customer_id     Int
+  feedback_date   DateTime  @db.Date
+  feedback_type   String?   @db.VarChar(50)
+  feedback_source String?   @db.VarChar(50)
+  feedback_text   String
+  product_service String?   @db.VarChar(255)
+  responded       Boolean?  @default(false)
+  response_text   String?
+  response_date   DateTime? @db.Date
+  action_taken    String?
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  customers       customers @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([customer_id], map: "idx_feedback_customer_id")
+  @@index([feedback_date], map: "idx_feedback_date")
+  @@index([feedback_type], map: "idx_feedback_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model customers {
+  id                  Int                   @id @default(autoincrement())
+  customer_code       String                @unique @db.VarChar(50)
+  customer_name       String                @db.VarChar(255)
+  customer_type       String?               @default("COMPANY") @db.VarChar(50)
+  tax_number          String?               @db.VarChar(50)
+  address             String?
+  city                String?               @db.VarChar(100)
+  country             String?               @db.VarChar(100)
+  phone               String?               @db.VarChar(50)
+  email               String?               @db.VarChar(255)
+  website             String?               @db.VarChar(255)
+  contact_person      String?               @db.VarChar(255)
+  contact_phone       String?               @db.VarChar(50)
+  contact_email       String?               @db.VarChar(255)
+  account_manager_id  Int?
+  credit_limit        Decimal?              @db.Decimal(15, 2)
+  payment_terms       Int?
+  is_active           Boolean?              @default(true)
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  customer_complaints customer_complaints[]
+  customer_feedback   customer_feedback[]
+  users               User?                 @relation(fields: [account_manager_id], references: [id], onUpdate: NoAction)
+  survey_responses    survey_responses[]
+
+  @@index([account_manager_id], map: "idx_account_manager_id")
+  @@index([customer_code], map: "idx_customer_code")
+  @@index([customer_name], map: "idx_customer_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model document_approvals {
+  id                                                   Int              @id @default(autoincrement())
+  revision_id                                          Int
+  approver_user_id                                     Int
+  approval_order                                       Int              @default(1)
+  approval_status                                      String?          @default("PENDING") @db.VarChar(50)
+  comments                                             String?
+  delegated_to_user_id                                 Int?
+  approved_at                                          DateTime?        @db.Timestamp(6)
+  created_at                                           DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at                                           DateTime?        @default(now()) @db.Timestamp(6)
+  users_document_approvals_approver_user_idTousers     User             @relation("document_approvals_approver_user_idTousers", fields: [approver_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_document_approvals_delegated_to_user_idTousers User?            @relation("document_approvals_delegated_to_user_idTousers", fields: [delegated_to_user_id], references: [id], onUpdate: NoAction)
+  document_revisions                                   DocumentRevision @relation(fields: [revision_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([revision_id, approver_user_id])
+  @@index([approver_user_id], map: "idx_approver_user_id")
+  @@index([approval_status], map: "idx_document_approval_status")
+  @@index([revision_id], map: "idx_document_approvals_revision_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model document_distributions {
+  id                      Int       @id @default(autoincrement())
+  document_id             Int
+  distributed_to_type     String    @db.VarChar(50)
+  distributed_to_id       Int
+  distribution_date       DateTime  @db.Date
+  acknowledgment_required Boolean?  @default(false)
+  acknowledged_at         DateTime? @db.Timestamp(6)
+  is_active               Boolean?  @default(true)
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  updated_at              DateTime? @default(now()) @db.Timestamp(6)
+  documents               Document  @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([distributed_to_id], map: "idx_distributed_to_id")
+  @@index([distributed_to_type], map: "idx_distributed_to_type")
+  @@index([document_id], map: "idx_distributions_document_id")
+}
+
+model email_templates {
+  id            Int       @id @default(autoincrement())
+  template_code String    @unique @db.VarChar(50)
+  template_name String    @db.VarChar(255)
+  subject       String
+  body_html     String
+  body_text     String?
+  variables     String?
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([template_code], map: "idx_template_code")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model employee_competencies {
+  id                                                     Int                    @id @default(autoincrement())
+  user_id                                                Int
+  competency_id                                          Int
+  competency_level                                       String?                @default("BEGINNER") @db.VarChar(50)
+  assessed_date                                          DateTime?              @db.Date
+  assessed_by_user_id                                    Int?
+  assessment_method                                      String?                @db.VarChar(100)
+  evidence                                               String?
+  expiry_date                                            DateTime?              @db.Date
+  is_verified                                            Boolean?               @default(false)
+  created_at                                             DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at                                             DateTime?              @default(now()) @db.Timestamp(6)
+  users_employee_competencies_assessed_by_user_idTousers User?                  @relation("employee_competencies_assessed_by_user_idTousers", fields: [assessed_by_user_id], references: [id], onUpdate: NoAction)
+  competency_definitions                                 competency_definitions @relation(fields: [competency_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_employee_competencies_user_idTousers             User                   @relation("employee_competencies_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, competency_id])
+  @@index([competency_level], map: "idx_competency_level")
+  @@index([competency_id], map: "idx_emp_comp_competency_id")
+  @@index([user_id], map: "idx_emp_comp_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model equipment {
+  id                           Int                   @id @default(autoincrement())
+  equipment_code               String                @unique @db.VarChar(50)
+  equipment_name               String                @db.VarChar(255)
+  category_id                  Int?
+  manufacturer                 String?               @db.VarChar(255)
+  model                        String?               @db.VarChar(255)
+  serial_number                String?               @db.VarChar(100)
+  purchase_date                DateTime?             @db.Date
+  purchase_cost                Decimal?              @db.Decimal(15, 2)
+  supplier_id                  Int?
+  location                     String?               @db.VarChar(255)
+  department_id                Int?
+  responsible_user_id          Int?
+  status                       String?               @default("ACTIVE") @db.VarChar(50)
+  calibration_required         Boolean?              @default(false)
+  calibration_frequency_months Int?
+  last_calibration_date        DateTime?             @db.Date
+  next_calibration_date        DateTime?             @db.Date
+  maintenance_required         Boolean?              @default(false)
+  maintenance_frequency_months Int?
+  last_maintenance_date        DateTime?             @db.Date
+  next_maintenance_date        DateTime?             @db.Date
+  disposal_date                DateTime?             @db.Date
+  disposal_reason              String?
+  notes                        String?
+  created_at                   DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at                   DateTime?             @default(now()) @db.Timestamp(6)
+  calibration_records          calibration_records[]
+  equipment_categories         equipment_categories? @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  departments                  Department?           @relation(fields: [department_id], references: [id], onUpdate: NoAction)
+  users                        User?                 @relation(fields: [responsible_user_id], references: [id], onUpdate: NoAction)
+  suppliers                    suppliers?            @relation(fields: [supplier_id], references: [id], onUpdate: NoAction)
+  maintenance_records          maintenance_records[]
+
+  @@index([category_id], map: "idx_equipment_category_id")
+  @@index([equipment_code], map: "idx_equipment_code")
+  @@index([status], map: "idx_equipment_status")
+  @@index([next_calibration_date], map: "idx_next_calibration_date")
+  @@index([next_maintenance_date], map: "idx_next_maintenance_date")
+}
+
+model equipment_categories {
+  id                   Int         @id @default(autoincrement())
+  category_name        String      @unique @db.VarChar(150)
+  description          String?
+  calibration_required Boolean?    @default(false)
+  is_active            Boolean?    @default(true)
+  created_at           DateTime?   @default(now()) @db.Timestamp(6)
+  equipment            equipment[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model kpi_definitions {
+  id                  Int          @id @default(autoincrement())
+  kpi_code            String       @unique @db.VarChar(50)
+  kpi_name            String       @db.VarChar(255)
+  description         String?
+  category            String?      @db.VarChar(100)
+  measurement_unit    String?      @db.VarChar(50)
+  calculation_method  String?
+  data_source         String?
+  target_value        Decimal?     @db.Decimal(15, 4)
+  min_acceptable      Decimal?     @db.Decimal(15, 4)
+  max_acceptable      Decimal?     @db.Decimal(15, 4)
+  frequency           String?      @db.VarChar(50)
+  responsible_user_id Int?
+  is_active           Boolean?     @default(true)
+  created_at          DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?    @default(now()) @db.Timestamp(6)
+  users               User?        @relation(fields: [responsible_user_id], references: [id], onUpdate: NoAction)
+  kpi_values          kpi_values[]
+
+  @@index([category], map: "idx_kpi_category")
+  @@index([kpi_code], map: "idx_kpi_code")
+}
+
+model kpi_values {
+  id                    Int             @id @default(autoincrement())
+  kpi_id                Int
+  measurement_date      DateTime        @db.Date
+  actual_value          Decimal         @db.Decimal(15, 4)
+  target_value          Decimal?        @db.Decimal(15, 4)
+  variance              Decimal?        @default(dbgenerated("(actual_value - target_value)")) @db.Decimal(15, 4)
+  variance_percentage   Decimal?        @default(dbgenerated("\nCASE\n    WHEN (target_value <> (0)::numeric) THEN (((actual_value - target_value) / target_value) * (100)::numeric)\n    ELSE NULL::numeric\nEND")) @db.Decimal(10, 2)
+  status                String?         @default(dbgenerated("\nCASE\n    WHEN (actual_value >= target_value) THEN 'ON_TARGET'::text\n    WHEN (actual_value >= (target_value * 0.9)) THEN 'NEAR_TARGET'::text\n    ELSE 'BELOW_TARGET'::text\nEND")) @db.VarChar(20)
+  notes                 String?
+  data_source_reference String?
+  recorded_by_user_id   Int
+  created_at            DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?       @default(now()) @db.Timestamp(6)
+  kpi_definitions       kpi_definitions @relation(fields: [kpi_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                 User            @relation(fields: [recorded_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([kpi_id, measurement_date])
+  @@index([status], map: "idx_kpi_status")
+  @@index([kpi_id], map: "idx_kpi_values_kpi_id")
+  @@index([measurement_date], map: "idx_measurement_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model maintenance_records {
+  id                    Int       @id @default(autoincrement())
+  equipment_id          Int
+  maintenance_date      DateTime  @db.Date
+  maintenance_type      String?   @db.VarChar(50)
+  performed_by          String?   @db.VarChar(255)
+  maintenance_company   String?   @db.VarChar(255)
+  work_order_number     String?   @db.VarChar(100)
+  problem_description   String?
+  work_performed        String?
+  parts_replaced        String?
+  downtime_hours        Decimal?  @db.Decimal(10, 2)
+  maintenance_cost      Decimal?  @db.Decimal(10, 2)
+  next_maintenance_date DateTime? @db.Date
+  recommendations       String?
+  created_by_user_id    Int
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
+  users                 User      @relation(fields: [created_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipment             equipment @relation(fields: [equipment_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([maintenance_date], map: "idx_maintenance_date")
+  @@index([equipment_id], map: "idx_maintenance_equipment_id")
+  @@index([maintenance_type], map: "idx_maintenance_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model management_review_actions {
+  id                                                         Int                        @id @default(autoincrement())
+  meeting_id                                                 Int
+  action_number                                              String                     @db.VarChar(50)
+  action_description                                         String
+  assigned_to_user_id                                        Int
+  priority                                                   String?                    @default("MEDIUM") @db.VarChar(50)
+  due_date                                                   DateTime                   @db.Date
+  status                                                     String?                    @default("OPEN") @db.VarChar(50)
+  completion_date                                            DateTime?                  @db.Date
+  completion_notes                                           String?
+  verified_by_user_id                                        Int?
+  verification_date                                          DateTime?                  @db.Date
+  created_at                                                 DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                                                 DateTime?                  @default(now()) @db.Timestamp(6)
+  users_management_review_actions_assigned_to_user_idTousers User                       @relation("management_review_actions_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  management_review_meetings                                 management_review_meetings @relation(fields: [meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_management_review_actions_verified_by_user_idTousers User?                      @relation("management_review_actions_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+
+  @@unique([meeting_id, action_number])
+  @@index([assigned_to_user_id], map: "idx_action_assigned_to")
+  @@index([status], map: "idx_review_action_status")
+  @@index([meeting_id], map: "idx_review_actions_meeting_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model management_review_meetings {
+  id                                                         Int                              @id @default(autoincrement())
+  meeting_number                                             String                           @unique @db.VarChar(50)
+  meeting_date                                               DateTime                         @db.Date
+  meeting_type                                               String?                          @db.VarChar(50)
+  location                                                   String?                          @db.VarChar(255)
+  duration_hours                                             Decimal?                         @db.Decimal(5, 2)
+  chaired_by_user_id                                         Int
+  secretary_user_id                                          Int?
+  agenda                                                     String?
+  status                                                     String?                          @default("PLANNED") @db.VarChar(50)
+  created_at                                                 DateTime?                        @default(now()) @db.Timestamp(6)
+  updated_at                                                 DateTime?                        @default(now()) @db.Timestamp(6)
+  management_review_actions                                  management_review_actions[]
+  users_management_review_meetings_chaired_by_user_idTousers User                             @relation("management_review_meetings_chaired_by_user_idTousers", fields: [chaired_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_management_review_meetings_secretary_user_idTousers  User?                            @relation("management_review_meetings_secretary_user_idTousers", fields: [secretary_user_id], references: [id], onUpdate: NoAction)
+  management_review_participants                             management_review_participants[]
+  management_review_topics                                   management_review_topics[]
+
+  @@index([meeting_date], map: "idx_meeting_date")
+  @@index([meeting_number], map: "idx_meeting_number")
+  @@index([status], map: "idx_meeting_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model management_review_participants {
+  id                         Int                        @id @default(autoincrement())
+  meeting_id                 Int
+  participant_user_id        Int
+  attendance_status          String?                    @default("INVITED") @db.VarChar(50)
+  role_in_meeting            String?                    @db.VarChar(100)
+  created_at                 DateTime?                  @default(now()) @db.Timestamp(6)
+  management_review_meetings management_review_meetings @relation(fields: [meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                      User                       @relation(fields: [participant_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([meeting_id, participant_user_id], map: "management_review_participant_meeting_id_participant_user_i_key")
+  @@index([participant_user_id], map: "idx_participant_user_id")
+  @@index([meeting_id], map: "idx_participants_meeting_id")
+}
+
+model management_review_topics {
+  id                         Int                        @id @default(autoincrement())
+  meeting_id                 Int
+  topic_title                String                     @db.VarChar(255)
+  topic_category             String?                    @db.VarChar(100)
+  presenter_user_id          Int?
+  discussion_summary         String?
+  data_presented             String?
+  issues_raised              String?
+  decisions_made             String?
+  presentation_order         Int?
+  duration_minutes           Int?
+  attachments                String?
+  created_at                 DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime?                  @default(now()) @db.Timestamp(6)
+  management_review_meetings management_review_meetings @relation(fields: [meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                      User?                      @relation(fields: [presenter_user_id], references: [id], onUpdate: NoAction)
+
+  @@index([meeting_id], map: "idx_topics_meeting_id")
+}
+
+model nonconformity_sources {
+  id           Int            @id @default(autoincrement())
+  source_name  String         @unique @db.VarChar(100)
+  description  String?
+  is_active    Boolean?       @default(true)
+  created_at   DateTime?      @default(now()) @db.Timestamp(6)
+  capa_records capa_records[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notifications {
+  id                Int       @id @default(autoincrement())
+  user_id           Int
+  notification_type String    @db.VarChar(100)
+  title             String    @db.VarChar(255)
+  message           String
+  entity_type       String?   @db.VarChar(100)
+  entity_id         Int?
+  priority          String?   @default("NORMAL") @db.VarChar(50)
+  is_read           Boolean?  @default(false)
+  read_at           DateTime? @db.Timestamp(6)
+  action_url        String?   @db.VarChar(512)
+  expires_at        DateTime? @db.Timestamp(6)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  users             User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([is_read], map: "idx_is_read")
+  @@index([created_at], map: "idx_notification_created_at")
+  @@index([notification_type], map: "idx_notification_type")
+  @@index([user_id], map: "idx_notifications_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model opportunities_register {
+  id                                                        Int         @id @default(autoincrement())
+  opportunity_code                                          String      @unique @db.VarChar(50)
+  opportunity_title                                         String      @db.VarChar(255)
+  description                                               String
+  category                                                  String?     @db.VarChar(100)
+  identified_date                                           DateTime    @db.Date
+  identified_by_user_id                                     Int
+  owner_user_id                                             Int
+  department_id                                             Int?
+  potential_benefit                                         String?
+  investment_required                                       Decimal?    @db.Decimal(15, 2)
+  expected_return                                           Decimal?    @db.Decimal(15, 2)
+  implementation_plan                                       String?
+  priority                                                  String?     @default("MEDIUM") @db.VarChar(50)
+  status                                                    String?     @default("IDENTIFIED") @db.VarChar(50)
+  realization_date                                          DateTime?   @db.Date
+  actual_benefit                                            String?
+  created_at                                                DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at                                                DateTime?   @default(now()) @db.Timestamp(6)
+  departments                                               Department? @relation(fields: [department_id], references: [id], onUpdate: NoAction)
+  users_opportunities_register_identified_by_user_idTousers User        @relation("opportunities_register_identified_by_user_idTousers", fields: [identified_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_opportunities_register_owner_user_idTousers         User        @relation("opportunities_register_owner_user_idTousers", fields: [owner_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([opportunity_code], map: "idx_opportunity_code")
+  @@index([priority], map: "idx_opportunity_priority")
+  @@index([status], map: "idx_opportunity_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model risk_assessments {
+  id                  Int           @id @default(autoincrement())
+  risk_id             Int
+  assessment_date     DateTime      @db.Date
+  assessed_by_user_id Int
+  probability_score   Int?
+  impact_score        Int?
+  assessment_notes    String?
+  created_at          DateTime?     @default(now()) @db.Timestamp(6)
+  users               User          @relation(fields: [assessed_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  risk_register       risk_register @relation(fields: [risk_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([assessment_date], map: "idx_assessment_date")
+  @@index([risk_id], map: "idx_assessments_risk_id")
+}
+
+model risk_categories {
+  id            Int             @id @default(autoincrement())
+  category_name String          @unique @db.VarChar(150)
+  description   String?
+  is_active     Boolean?        @default(true)
+  created_at    DateTime?       @default(now()) @db.Timestamp(6)
+  risk_register risk_register[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model risk_register {
+  id                                               Int                @id @default(autoincrement())
+  risk_code                                        String             @unique @db.VarChar(50)
+  risk_title                                       String             @db.VarChar(255)
+  risk_description                                 String
+  category_id                                      Int?
+  risk_type                                        String             @db.VarChar(50)
+  identified_date                                  DateTime           @db.Date
+  identified_by_user_id                            Int
+  owner_user_id                                    Int
+  department_id                                    Int?
+  probability_score                                Int?
+  impact_score                                     Int?
+  risk_score                                       Int?               @default(dbgenerated("(probability_score * impact_score)"))
+  risk_level                                       String?            @default(dbgenerated("\nCASE\n    WHEN ((probability_score * impact_score) >= 20) THEN 'CRITICAL'::text\n    WHEN ((probability_score * impact_score) >= 12) THEN 'HIGH'::text\n    WHEN ((probability_score * impact_score) >= 6) THEN 'MEDIUM'::text\n    ELSE 'LOW'::text\nEND")) @db.VarChar(20)
+  control_measures                                 String?
+  mitigation_plan                                  String?
+  residual_probability                             Int?
+  residual_impact                                  Int?
+  residual_risk_score                              Int?               @default(dbgenerated("(residual_probability * residual_impact)"))
+  status                                           String?            @default("IDENTIFIED") @db.VarChar(50)
+  review_date                                      DateTime?          @db.Date
+  close_date                                       DateTime?          @db.Date
+  close_reason                                     String?
+  created_at                                       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at                                       DateTime?          @default(now()) @db.Timestamp(6)
+  risk_assessments                                 risk_assessments[]
+  risk_categories                                  risk_categories?   @relation(fields: [category_id], references: [id], onUpdate: NoAction)
+  departments                                      Department?        @relation(fields: [department_id], references: [id], onUpdate: NoAction)
+  users_risk_register_identified_by_user_idTousers User               @relation("risk_register_identified_by_user_idTousers", fields: [identified_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_risk_register_owner_user_idTousers         User               @relation("risk_register_owner_user_idTousers", fields: [owner_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([risk_code], map: "idx_risk_code")
+  @@index([identified_by_user_id], map: "idx_risk_identified_by")
+  @@index([risk_level], map: "idx_risk_level")
+  @@index([owner_user_id], map: "idx_risk_owner_user_id")
+  @@index([status], map: "idx_risk_status")
+  @@index([risk_type], map: "idx_risk_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model satisfaction_surveys {
+  id               Int                @id @default(autoincrement())
+  survey_code      String             @unique @db.VarChar(50)
+  survey_name      String             @db.VarChar(255)
+  survey_type      String?            @db.VarChar(50)
+  description      String?
+  questions        Json?
+  is_active        Boolean?           @default(true)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  survey_responses survey_responses[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model supplier_evaluations {
+  id                   Int       @id @default(autoincrement())
+  supplier_id          Int
+  evaluation_date      DateTime  @db.Date
+  evaluated_by_user_id Int
+  evaluation_type      String?   @db.VarChar(50)
+  quality_score        Decimal?  @db.Decimal(5, 2)
+  delivery_score       Decimal?  @db.Decimal(5, 2)
+  price_score          Decimal?  @db.Decimal(5, 2)
+  service_score        Decimal?  @db.Decimal(5, 2)
+  overall_score        Decimal?  @db.Decimal(5, 2)
+  evaluation_criteria  String?
+  strengths            String?
+  weaknesses           String?
+  improvement_areas    String?
+  decision             String?   @db.VarChar(50)
+  conditions           String?
+  next_evaluation_date DateTime? @db.Date
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  updated_at           DateTime? @default(now()) @db.Timestamp(6)
+  users                User      @relation(fields: [evaluated_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers            suppliers @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([decision], map: "idx_eval_decision")
+  @@index([supplier_id], map: "idx_eval_supplier_id")
+  @@index([evaluation_date], map: "idx_evaluation_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model supplier_nonconformities {
+  id                                                        Int           @id @default(autoincrement())
+  supplier_id                                               Int
+  nc_number                                                 String        @unique @db.VarChar(50)
+  nc_date                                                   DateTime      @db.Date
+  reported_by_user_id                                       Int
+  nc_type                                                   String?       @db.VarChar(50)
+  description                                               String
+  product_service                                           String?       @db.VarChar(255)
+  order_reference                                           String?       @db.VarChar(100)
+  severity                                                  String?       @default("MEDIUM") @db.VarChar(50)
+  immediate_action                                          String?
+  supplier_response                                         String?
+  response_date                                             DateTime?     @db.Date
+  corrective_action                                         String?
+  verification_status                                       String?       @default("PENDING") @db.VarChar(50)
+  verified_by_user_id                                       Int?
+  verification_date                                         DateTime?     @db.Date
+  capa_id                                                   Int?
+  created_at                                                DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at                                                DateTime?     @default(now()) @db.Timestamp(6)
+  capa_records                                              capa_records? @relation(fields: [capa_id], references: [id], onUpdate: NoAction)
+  users_supplier_nonconformities_reported_by_user_idTousers User          @relation("supplier_nonconformities_reported_by_user_idTousers", fields: [reported_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers                                                 suppliers     @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_supplier_nonconformities_verified_by_user_idTousers User?         @relation("supplier_nonconformities_verified_by_user_idTousers", fields: [verified_by_user_id], references: [id], onUpdate: NoAction)
+
+  @@index([nc_number], map: "idx_nc_number")
+  @@index([severity], map: "idx_nc_severity")
+  @@index([supplier_id], map: "idx_supplier_nc_supplier_id")
+}
+
+model supplier_performance {
+  id                      Int       @id @default(autoincrement())
+  supplier_id             Int
+  metric_date             DateTime  @db.Date
+  on_time_delivery_rate   Decimal?  @db.Decimal(5, 2)
+  quality_acceptance_rate Decimal?  @db.Decimal(5, 2)
+  complaint_rate          Decimal?  @db.Decimal(5, 2)
+  response_time_hours     Decimal?  @db.Decimal(10, 2)
+  order_accuracy_rate     Decimal?  @db.Decimal(5, 2)
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  suppliers               suppliers @relation(fields: [supplier_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([supplier_id, metric_date])
+  @@index([metric_date], map: "idx_metric_date")
+  @@index([supplier_id], map: "idx_perf_supplier_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model suppliers {
+  id                       Int                        @id @default(autoincrement())
+  supplier_code            String                     @unique @db.VarChar(50)
+  supplier_name            String                     @db.VarChar(255)
+  supplier_type            String?                    @db.VarChar(50)
+  tax_number               String?                    @db.VarChar(50)
+  address                  String?
+  city                     String?                    @db.VarChar(100)
+  country                  String?                    @db.VarChar(100)
+  phone                    String?                    @db.VarChar(50)
+  email                    String?                    @db.VarChar(255)
+  website                  String?                    @db.VarChar(255)
+  contact_person           String?                    @db.VarChar(255)
+  contact_phone            String?                    @db.VarChar(50)
+  contact_email            String?                    @db.VarChar(255)
+  certification_info       String?
+  bank_details             String?
+  payment_terms            Int?
+  evaluation_status        String?                    @default("PENDING") @db.VarChar(50)
+  evaluation_score         Decimal?                   @db.Decimal(5, 2)
+  last_evaluation_date     DateTime?                  @db.Date
+  next_evaluation_date     DateTime?                  @db.Date
+  is_critical              Boolean?                   @default(false)
+  is_active                Boolean?                   @default(true)
+  created_at               DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at               DateTime?                  @default(now()) @db.Timestamp(6)
+  equipment                equipment[]
+  supplier_evaluations     supplier_evaluations[]
+  supplier_nonconformities supplier_nonconformities[]
+  supplier_performance     supplier_performance[]
+
+  @@index([evaluation_status], map: "idx_evaluation_status")
+  @@index([supplier_code], map: "idx_supplier_code")
+  @@index([supplier_name], map: "idx_supplier_name")
+  @@index([supplier_type], map: "idx_supplier_type")
+}
+
+model survey_responses {
+  id                   Int                  @id @default(autoincrement())
+  survey_id            Int
+  customer_id          Int?
+  response_date        DateTime             @db.Date
+  overall_score        Decimal?             @db.Decimal(3, 2)
+  responses            Json?
+  comments             String?
+  created_at           DateTime?            @default(now()) @db.Timestamp(6)
+  customers            customers?           @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+  satisfaction_surveys satisfaction_surveys @relation(fields: [survey_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([customer_id], map: "idx_response_customer_id")
+  @@index([response_date], map: "idx_response_date")
+  @@index([survey_id], map: "idx_response_survey_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model system_audit_log {
+  id                 Int       @id @default(autoincrement())
+  table_name         String    @db.VarChar(100)
+  record_id          Int
+  action             String    @db.VarChar(50)
+  old_values         Json?
+  new_values         Json?
+  changed_by_user_id Int?
+  changed_at         DateTime? @default(now()) @db.Timestamp(6)
+  ip_address         String?   @db.VarChar(45)
+  user_agent         String?
+
+  @@index([action], map: "idx_audit_action")
+  @@index([changed_at], map: "idx_audit_changed_at")
+  @@index([record_id], map: "idx_audit_record_id")
+  @@index([table_name], map: "idx_audit_table_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tasks {
+  id                                     Int       @id @default(autoincrement())
+  task_number                            String    @unique @db.VarChar(50)
+  task_title                             String    @db.VarChar(255)
+  task_description                       String?
+  task_type                              String?   @db.VarChar(100)
+  assigned_to_user_id                    Int
+  assigned_by_user_id                    Int
+  related_entity_type                    String?   @db.VarChar(100)
+  related_entity_id                      Int?
+  priority                               String?   @default("MEDIUM") @db.VarChar(50)
+  status                                 String?   @default("PENDING") @db.VarChar(50)
+  due_date                               DateTime  @db.Date
+  start_date                             DateTime? @db.Date
+  completion_date                        DateTime? @db.Date
+  estimated_hours                        Decimal?  @db.Decimal(10, 2)
+  actual_hours                           Decimal?  @db.Decimal(10, 2)
+  completion_notes                       String?
+  created_at                             DateTime? @default(now()) @db.Timestamp(6)
+  updated_at                             DateTime? @default(now()) @db.Timestamp(6)
+  users_tasks_assigned_by_user_idTousers User      @relation("tasks_assigned_by_user_idTousers", fields: [assigned_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_tasks_assigned_to_user_idTousers User      @relation("tasks_assigned_to_user_idTousers", fields: [assigned_to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([assigned_to_user_id], map: "idx_task_assigned_to")
+  @@index([due_date], map: "idx_task_due_date")
+  @@index([task_number], map: "idx_task_number")
+  @@index([status], map: "idx_task_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model training_courses {
+  id                  Int                   @id @default(autoincrement())
+  course_code         String                @unique @db.VarChar(50)
+  course_name         String                @db.VarChar(255)
+  course_type         String                @db.VarChar(50)
+  description         String?
+  objectives          String?
+  target_audience     String?
+  prerequisites       String?
+  duration_hours      Decimal?              @db.Decimal(5, 2)
+  max_participants    Int?
+  passing_score       Decimal?              @db.Decimal(5, 2)
+  validity_months     Int?
+  provider_name       String?               @db.VarChar(255)
+  is_mandatory        Boolean?              @default(false)
+  is_active           Boolean?              @default(true)
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  course_competencies course_competencies[]
+  training_needs      training_needs[]
+  training_sessions   training_sessions[]
+
+  @@index([course_code], map: "idx_course_code")
+  @@index([course_type], map: "idx_course_type")
+  @@index([is_mandatory], map: "idx_is_mandatory")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model training_enrollments {
+  id                      Int               @id @default(autoincrement())
+  session_id              Int
+  user_id                 Int
+  enrollment_date         DateTime          @db.Date
+  enrollment_status       String?           @default("ENROLLED") @db.VarChar(50)
+  attendance_percentage   Decimal?          @db.Decimal(5, 2)
+  test_score              Decimal?          @db.Decimal(5, 2)
+  passed                  Boolean?
+  certificate_number      String?           @db.VarChar(100)
+  certificate_issue_date  DateTime?         @db.Date
+  certificate_expiry_date DateTime?         @db.Date
+  completion_date         DateTime?         @db.Date
+  feedback_rating         Int?
+  feedback_comments       String?
+  created_at              DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?         @default(now()) @db.Timestamp(6)
+  training_sessions       training_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                   User              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([session_id, user_id])
+  @@index([certificate_expiry_date], map: "idx_certificate_expiry_date")
+  @@index([session_id], map: "idx_enrollment_session_id")
+  @@index([enrollment_status], map: "idx_enrollment_status")
+  @@index([user_id], map: "idx_enrollment_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model training_needs {
+  id                                                Int                     @id @default(autoincrement())
+  user_id                                           Int
+  identified_by_user_id                             Int
+  competency_id                                     Int?
+  training_course_id                                Int?
+  need_description                                  String
+  priority                                          String?                 @default("MEDIUM") @db.VarChar(50)
+  target_date                                       DateTime?               @db.Date
+  status                                            String?                 @default("IDENTIFIED") @db.VarChar(50)
+  completion_date                                   DateTime?               @db.Date
+  created_at                                        DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                                        DateTime?               @default(now()) @db.Timestamp(6)
+  competency_definitions                            competency_definitions? @relation(fields: [competency_id], references: [id], onUpdate: NoAction)
+  users_training_needs_identified_by_user_idTousers User                    @relation("training_needs_identified_by_user_idTousers", fields: [identified_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  training_courses                                  training_courses?       @relation(fields: [training_course_id], references: [id], onUpdate: NoAction)
+  users_training_needs_user_idTousers               User                    @relation("training_needs_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([priority], map: "idx_training_needs_priority")
+  @@index([status], map: "idx_training_needs_status")
+  @@index([user_id], map: "idx_training_needs_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model training_sessions {
+  id                   Int                    @id @default(autoincrement())
+  course_id            Int
+  session_code         String                 @unique @db.VarChar(50)
+  trainer_name         String?                @db.VarChar(255)
+  trainer_user_id      Int?
+  location             String?                @db.VarChar(255)
+  start_date           DateTime               @db.Date
+  end_date             DateTime               @db.Date
+  start_time           DateTime?              @db.Time(6)
+  end_time             DateTime?              @db.Time(6)
+  max_participants     Int?
+  enrolled_count       Int?                   @default(0)
+  status               String?                @default("PLANNED") @db.VarChar(50)
+  completion_notes     String?
+  created_at           DateTime?              @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(6)
+  training_enrollments training_enrollments[]
+  training_courses     training_courses       @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                User?                  @relation(fields: [trainer_user_id], references: [id], onUpdate: NoAction)
+
+  @@index([session_code], map: "idx_session_code")
+  @@index([course_id], map: "idx_session_course_id")
+  @@index([start_date, end_date], map: "idx_session_dates")
+  @@index([status], map: "idx_session_status")
+}
+
+model user_activity_logs {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  activity_type String    @db.VarChar(100)
+  module_name   String?   @db.VarChar(100)
+  entity_type   String?   @db.VarChar(100)
+  entity_id     Int?
+  action        String?   @db.VarChar(100)
+  description   String?
+  ip_address    String?   @db.VarChar(45)
+  user_agent    String?
+  activity_data Json?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  users         User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([activity_type], map: "idx_activity_logs_activity_type")
+  @@index([created_at], map: "idx_activity_logs_created_at")
+  @@index([user_id], map: "idx_activity_logs_user_id")
+}
+
+enum DocumentStatus {
+  draft
+  pending_approval
+  approved
+  published
+  archived
+  obsolete
+
+  @@map("document_status")
+}
+
+enum AccessLevel {
+  public
+  internal
+  restricted
+  confidential
+
+  @@map("access_level")
+}
+
+enum DocumentType {
+  policy
+  procedure
+  work_instruction
+  form
+  record
+  external
+
+  @@map("document_type")
+}
+
+enum ContentType {
+  text
+  file
+  url
+
+  @@map("content_type")
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  superseded
+
+  @@map("approval_status")
+}
+
+enum AccessAction {
+  view
+  download
+  print
+  share
+
+  @@map("access_action")
 }

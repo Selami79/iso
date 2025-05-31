@@ -1,0 +1,12 @@
+TEST DOKÜMANI
+
+Bu doküman, dosya yükleme fonksiyonalitesini test etmek için oluşturulmuştur.
+
+İçerik:
+1. Dosya yükleme testi
+2. MIME type doğrulaması
+3. Türkçe karakter desteği
+4. Revizyon oluşturma testi
+
+Oluşturma tarihi: 31 Mayıs 2025
+Test durumu: BAŞARILI

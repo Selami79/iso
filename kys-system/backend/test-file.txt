@@ -1,0 +1,8 @@
+Bu bir test dosyasıdır.
+
+Test içeriği:
+- Dosya yükleme testi
+- MIME type kontrolü
+- Türkçe karakter desteği
+
+Tarih: 30 Mayıs 2025

@@ -1,0 +1,11 @@
+# Müşteri Şikayet Prosedürü
+
+## Amaç
+Müşteri şikayetlerinin alınması, değerlendirilmesi ve çözümlenmesi
+
+## Kapsam
+Tüm müşteri şikayetleri
+
+## Sorumluluklar
+- Müşteri Hizmetleri
+- Kalite Departmanı
